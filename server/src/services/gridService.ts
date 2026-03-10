@@ -6,7 +6,7 @@ function generateGridCode(): string {
   return crypto.randomBytes(3).toString("hex").toUpperCase().slice(0, 6);
 }
 
-export async function createGrid(name: string, ownerId: string, season: number = 2025) {
+export async function createGrid(name: string, ownerId: string, season: number = new Date().getFullYear()) {
   let code: string;
   // Ensure uniqueness
   do {

@@ -1,6 +1,6 @@
 import prisma from "../config/database";
 
-export async function getRaceWeekends(season: number = 2026) {
+export async function getRaceWeekends(season: number = new Date().getFullYear()) {
   return prisma.raceWeekend.findMany({
     where: { season },
     orderBy: { round: "asc" },
@@ -15,7 +15,7 @@ export async function getRaceWeekendById(id: string) {
   });
 }
 
-export async function getDrivers(season: number = 2025) {
+export async function getDrivers(season: number = new Date().getFullYear()) {
   return prisma.driver.findMany({
     where: { season },
     include: { team: true },
@@ -23,7 +23,7 @@ export async function getDrivers(season: number = 2025) {
   });
 }
 
-export async function getTeams(season: number = 2025) {
+export async function getTeams(season: number = new Date().getFullYear()) {
   return prisma.team.findMany({
     where: { season },
     include: { drivers: true },

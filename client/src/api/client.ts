@@ -121,7 +121,7 @@ class ApiClient {
   }
 
   // ── Races ─────────────────────────────────────────────────────────────────
-  getRaceWeekends(season: number = 2026) {
+  getRaceWeekends(season: number = new Date().getFullYear()) {
     return this.request<RaceWeekend[]>(`/races/weekends?season=${season}`);
   }
 

@@ -7,7 +7,7 @@ const router = Router();
 
 // Admin: manually trigger a season data sync (no auth required — dev convenience)
 router.post("/admin/sync", async (req: Request, res: Response) => {
-  const year = req.query.year ? parseInt(req.query.year as string, 10) : 2025;
+  const year = req.query.year ? parseInt(req.query.year as string, 10) : new Date().getFullYear();
   try {
     await syncSeasonData(year);
     await syncRaceResults();

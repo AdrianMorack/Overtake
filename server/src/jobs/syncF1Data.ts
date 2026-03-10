@@ -8,7 +8,7 @@ import { detectAndManageLiveSessions } from "../services/liveRaceService";
  * Sync race schedule, drivers, teams from OpenF1 for a given season.
  * Intended to run once at the start of each season and periodically to pick up changes.
  */
-export async function syncSeasonData(year: number = 2026) {
+export async function syncSeasonData(year: number = new Date().getFullYear()) {
   console.log(`[Sync] Starting season data sync for ${year}…`);
 
   // 1. Fetch sessions

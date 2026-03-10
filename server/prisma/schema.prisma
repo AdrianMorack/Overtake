@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  refreshTokens  RefreshToken[]
+  gridMemberships GridMembership[]
+  predictions     Prediction[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─── Grids ───────────────────────────────────────────────────────────────────
+
+model Grid {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique @db.Char(6)
+  ownerId   String   @map("owner_id")
+  season    Int      @default(2025)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  memberships GridMembership[]
+
+  @@map("grids")
+}
+
+model GridMembership {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  gridId   String   @map("grid_id")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grid Grid @relation(fields: [gridId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gridId])
+  @@map("grid_memberships")
+}
+
+// ─── F1 Reference Data ──────────────────────────────────────────────────────
+
+model Driver {
+  id          String @id @default(cuid())
+  externalId  Int?   @unique @map("external_id") // OpenF1 driver number
+  firstName   String @map("first_name")
+  lastName    String @map("last_name")
+  code        String @db.VarChar(3) // e.g. VER, HAM
+  teamId      String? @map("team_id")
+  headshotUrl String? @map("headshot_url")
+  season      Int    @default(2025)
+
+  team Team? @relation(fields: [teamId], references: [id])
+
+  @@map("drivers")
+}
+
+model Team {
+  id         String @id @default(cuid())
+  externalId Int?   @unique @map("external_id")
+  name       String @unique
+  color      String? // hex color
+  season     Int    @default(2025)
+
+  drivers Driver[]
+
+  @@map("teams")
+}
+
+// ─── Race Weekends ──────────────────────────────────────────────────────────
+
+model RaceWeekend {
+  id              String   @id @default(cuid())
+  externalId      Int?     @unique @map("external_id") // OpenF1 session key
+  season          Int
+  round           Int
+  raceName        String   @map("race_name")
+  circuitName     String   @map("circuit_name")
+  country         String
+  raceDate        DateTime @map("race_date")
+  qualifyingDate  DateTime? @map("qualifying_date")
+  predictionsLock DateTime  @map("predictions_lock") // no predictions after this
+  status          RaceStatus @default(UPCOMING)
+
+  results     RaceResult?
+  predictions Prediction[]
+
+  @@unique([season, round])
+  @@map("race_weekends")
+}
+
+enum RaceStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+}
+
+// ─── Official Results ───────────────────────────────────────────────────────
+
+model RaceResult {
+  id             String @id @default(cuid())
+  raceWeekendId  String @unique @map("race_weekend_id")
+
+  // Store driver codes for clarity; ids reference Driver table
+  qualiFirst     String @map("quali_first")   // driver code
+  qualiSecond    String @map("quali_second")
+  qualiThird     String @map("quali_third")
+
+  raceFirst      String @map("race_first")
+  raceSecond     String @map("race_second")
+  raceThird      String @map("race_third")
+
+  fastestLap     String @map("fastest_lap")   // driver code
+  topTeam        String @map("top_team")       // team name
+
+  fetchedAt      DateTime @default(now()) @map("fetched_at")
+
+  raceWeekend RaceWeekend @relation(fields: [raceWeekendId], references: [id], onDelete: Cascade)
+
+  @@map("race_results")
+}
+
+// ─── User Predictions ───────────────────────────────────────────────────────
+
+model Prediction {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  raceWeekendId  String   @map("race_weekend_id")
+  gridId         String   @map("grid_id")
+
+  qualiFirst     String   @map("quali_first")
+  qualiSecond    String   @map("quali_second")
+  qualiThird     String   @map("quali_third")
+
+  raceFirst      String   @map("race_first")
+  raceSecond     String   @map("race_second")
+  raceThird      String   @map("race_third")
+
+  fastestLap     String   @map("fastest_lap")
+  topTeam        String   @map("top_team")
+
+  totalPoints    Int      @default(0) @map("total_points")
+  breakdown      Json?    // detailed per-category point breakdown
+
+  submittedAt    DateTime @default(now()) @map("submitted_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  raceWeekend RaceWeekend @relation(fields: [raceWeekendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, raceWeekendId, gridId])
+  @@index([gridId])
+  @@map("predictions")
+}

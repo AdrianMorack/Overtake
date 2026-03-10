@@ -49,7 +49,7 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_refresh_in_production}
       PORT: 4000
       NODE_ENV: ${NODE_ENV:-development}
-      OPENF1_BASE_URL: http://fastf1:8000
+      FASTF1_BASE_URL: http://fastf1:8000
     ports:
       - "4000:4000"
 

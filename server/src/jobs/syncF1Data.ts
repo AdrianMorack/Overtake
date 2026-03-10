@@ -1,18 +1,18 @@
 import { CronJob } from "cron";
 import prisma from "../config/database";
-import * as openF1 from "../services/openF1Client";
+import * as FastF1 from "../services/fastF1Client";
 import { scoreRace } from "../services/scoringService";
 import { detectAndManageLiveSessions } from "../services/liveRaceService";
 
 /**
- * Sync race schedule, drivers, teams from OpenF1 for a given season.
+ * Sync race schedule, drivers, teams from FastF1 for a given season.
  * Intended to run once at the start of each season and periodically to pick up changes.
  */
 export async function syncSeasonData(year: number = new Date().getFullYear()) {
   console.log(`[Sync] Starting season data sync for ${year}…`);
 
   // 1. Fetch sessions
-  const { races, qualis } = await openF1.getRaceAndQualiSessions(year);
+  const { races, qualis } = await fastF1.getRaceAndQualiSessions(year);
   console.log(`[Sync] Found ${races.length} races, ${qualis.length} qualifyings`);
 
   // Build maps from meeting_key → qualifying date and qualifying session_key
@@ -62,7 +62,7 @@ export async function syncSeasonData(year: number = new Date().getFullYear()) {
 
   // 3. Sync drivers + teams from the first race session
   if (races.length > 0) {
-    const drivers = await openF1.getSessionDrivers(races[0].session_key);
+    const drivers = await fastF1.getSessionDrivers(races[0].session_key);
     const teamMap = new Map<string, { name: string; color: string }>();
 
     for (const d of drivers) {
@@ -129,23 +129,23 @@ export async function syncRaceResults() {
 
     try {
       // Get race final positions
-      const racePositions = await openF1.getFinalPositions(race.externalId);
+      const racePositions = await fastF1.getFinalPositions(race.externalId);
       if (racePositions.length < 3) {
         console.log(`[Results] Race ${race.raceName}: insufficient position data yet`);
         continue;
       }
 
       // Get qualifying final positions using the stored qualiSessionKey
-      let qualiPositions: Awaited<ReturnType<typeof openF1.getFinalPositions>> = [];
+      let qualiPositions: Awaited<ReturnType<typeof fastF1.getFinalPositions>> = [];
       if (race.qualiSessionKey) {
-        qualiPositions = await openF1.getFinalPositions(race.qualiSessionKey);
+        qualiPositions = await fastF1.getFinalPositions(race.qualiSessionKey);
       }
 
       // Get fastest lap
-      const fastestLapDriverNum = await openF1.getFastestLapDriver(race.externalId);
+      const fastestLapDriverNum = await fastF1.getFastestLapDriver(race.externalId);
 
       // Resolve driver numbers → codes
-      const drivers = await openF1.getSessionDrivers(race.externalId);
+      const drivers = await fastF1.getSessionDrivers(race.externalId);
       const driverByNum = new Map(drivers.map((d) => [d.driver_number, d]));
 
       const codeFor = (num: number) => driverByNum.get(num)?.name_acronym ?? "UNK";

@@ -1,22 +1,25 @@
 import { env } from "../config/env";
 
 /**
- * OpenF1 API client
- * Docs: https://openf1.org/docs/#api-endpoints
+ * FastF1 API client
+ * Connects to the FastF1 Python bridge service
  *
  * Key endpoints used:
  *   GET /sessions   — list sessions (race, qualifying) for a season
  *   GET /drivers    — list drivers for a session
  *   GET /position   — final classification positions
  *   GET /laps       — lap data (to find fastest lap)
- *   GET /team_radio — (unused but available)
+ *   GET /intervals  — gap and interval data
+ *   GET /pit        — pit stop data
+ *   GET /stints     — tyre stint data
+ *   GET /race_control — race control messages
+ *   GET /weather    — weather data
  *
- * FastF1 (https://docs.fastf1.dev/) is a Python library – we pull the same
- * underlying Ergast/OpenF1 data via the REST endpoints and use the OpenF1
- * REST API directly from Node.js.
+ * FastF1 (https://docs.fastf1.dev/) is a Python library that provides
+ * official F1 timing data. Our Python service exposes this data via REST.
  */
 
-const BASE = env.openF1BaseUrl;
+const BASE = env.fastF1BaseUrl;
 
 async function fetchJson<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   const url = new URL(`${BASE}${path}`);
@@ -28,14 +31,14 @@ async function fetchJson<T>(path: string, params: Record<string, string> = {}): 
   });
 
   if (!res.ok) {
-    throw new Error(`OpenF1 ${res.status}: ${await res.text()}`);
+    throw new Error(`FastF1 ${res.status}: ${await res.text()}`);
   }
-  return res.json() as Promise<T>;
+  return res.json();
 }
 
-// ─── Types mirroring OpenF1 response shapes ─────────────────────────────────
+// ─── Types mirroring FastF1 response shapes ─────────────────────────────────
 
-export interface OpenF1Session {
+export interface FastF1Session {
   session_key: number;
   session_name: string;       // "Race", "Qualifying", "Sprint", …
   session_type: string;
@@ -47,7 +50,7 @@ export interface OpenF1Session {
   year: number;
 }
 
-export interface OpenF1Driver {
+export interface FastF1Driver {
   driver_number: number;
   first_name: string;
   last_name: string;
@@ -58,26 +61,42 @@ export interface OpenF1Driver {
   session_key: number;
 }
 
-export interface OpenF1Position {
+export interface FastF1Position {
   driver_number: number;
   position: number;
   date: string;
   session_key: number;
 }
 
-export interface OpenF1Lap {
+export interface FastF1Lap {
   driver_number: number;
   lap_number: number;
-  lap_duration: number | null;
+  lap_time: number | null;
+  sector1_time: number | null;
+  sector2_time: number | null;
+  sector3_time: number | null;
+  speed_i1: number | null; // Speed at intermediate 1 (km/h)
+  speed_i2: number | null; // Speed at intermediate 2 (km/h)
+  speed_fl: number | null; // Speed at finish line (km/h)
+  speed_st: number | null; // Speed at speed trap (km/h)
+  compound: string | null; // Tyre compound (SOFT, MEDIUM, HARD, INTERMEDIATE, WET)
+  tyre_life: number | null; // Laps completed on this set of tyres
+  fresh_tyre: boolean | null; // Whether tyres are fresh (new)
+  stint: number | null; // Stint number
   is_pit_out_lap: boolean;
+  is_personal_best: boolean;
+  track_status: string | null; // Track status during lap (e.g., "1" = green, "2" = yellow, etc.)
+  lap_start_time: string | null; // ISO timestamp when lap started
+  team: string | null;
+  driver: string | null; // Driver abbreviation
   session_key: number;
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 /** Get all sessions for a given year (filter by type if needed) */
-export async function getSessions(year: number): Promise<OpenF1Session[]> {
-  return fetchJson<OpenF1Session[]>("/sessions", { year: String(year) });
+export async function getSessions(year: number): Promise<FastF1Session[]> {
+  return fetchJson<FastF1Session[]>("/sessions", { year: String(year) });
 }
 
 /** Get the race and qualifying sessions for a year */
@@ -89,18 +108,18 @@ export async function getRaceAndQualiSessions(year: number) {
 }
 
 /** Get drivers for a specific session */
-export async function getSessionDrivers(sessionKey: number): Promise<OpenF1Driver[]> {
-  return fetchJson<OpenF1Driver[]>("/drivers", { session_key: String(sessionKey) });
+export async function getSessionDrivers(sessionKey: number): Promise<FastF1Driver[]> {
+  return fetchJson<FastF1Driver[]>("/drivers", { session_key: String(sessionKey) });
 }
 
 /** Get final positions for a session (last recorded position per driver) */
-export async function getFinalPositions(sessionKey: number): Promise<OpenF1Position[]> {
-  const positions = await fetchJson<OpenF1Position[]>("/position", {
+export async function getFinalPositions(sessionKey: number): Promise<FastF1Position[]> {
+  const positions = await fetchJson<FastF1Position[]>("/position", {
     session_key: String(sessionKey),
   });
 
-  // OpenF1 returns positional updates over time. We want the LAST position per driver.
-  const latest = new Map<number, OpenF1Position>();
+  // FastF1 returns positional updates over time. We want the LAST position per driver.
+  const latest = new Map<number, FastF1Position>();
   for (const p of positions) {
     const existing = latest.get(p.driver_number);
     if (!existing || new Date(p.date) > new Date(existing.date)) {
@@ -113,15 +132,15 @@ export async function getFinalPositions(sessionKey: number): Promise<OpenF1Posit
 
 /** Get the driver with the fastest lap in a race session */
 export async function getFastestLapDriver(sessionKey: number): Promise<number | null> {
-  const laps = await fetchJson<OpenF1Lap[]>("/laps", {
+  const laps = await fetchJson<FastF1Lap[]>("/laps", {
     session_key: String(sessionKey),
   });
 
   let fastest: { driver: number; time: number } | null = null;
   for (const lap of laps) {
-    if (lap.lap_duration == null || lap.is_pit_out_lap) continue;
-    if (!fastest || lap.lap_duration < fastest.time) {
-      fastest = { driver: lap.driver_number, time: lap.lap_duration };
+    if (lap.lap_time == null || lap.is_pit_out_lap) continue;
+    if (!fastest || lap.lap_time < fastest.time) {
+      fastest = { driver: lap.driver_number, time: lap.lap_time };
     }
   }
 
@@ -130,7 +149,7 @@ export async function getFastestLapDriver(sessionKey: number): Promise<number | 
 
 // ─── New live-data types ─────────────────────────────────────────────────────
 
-export interface OpenF1Interval {
+export interface FastF1Interval {
   driver_number: number;
   date: string;
   gap_to_leader: number | null; // seconds; negative = lapped
@@ -138,7 +157,7 @@ export interface OpenF1Interval {
   session_key: number;
 }
 
-export interface OpenF1Pit {
+export interface FastF1Pit {
   driver_number: number;
   date: string;
   lap_number: number;
@@ -146,16 +165,18 @@ export interface OpenF1Pit {
   session_key: number;
 }
 
-export interface OpenF1Stint {
+export interface FastF1Stint {
   driver_number: number;
-  lap_start: number;
-  lap_end: number | null;
-  compound: string; // SOFT | MEDIUM | HARD | INTERMEDIATE | WET
-  tyre_age_at_start: number;
+  stint_number: number; // Stint number for this driver
+  compound: string; // SOFT | MEDIUM | HARD | INTERMEDIATE | WET | UNKNOWN
+  tyre_age_at_start: number; // Age of tyres in laps when stint started
+  lap_start: number; // Lap number when stint started
+  lap_end: number | null; // Lap number when stint ended (null for current stint)
+  fresh_tyre: boolean; // Whether tyres were fresh at stint start
   session_key: number;
 }
 
-export interface OpenF1RaceControl {
+export interface FastF1RaceControl {
   date: string;
   category: string; // Flag | SafetyCar | Drs | ChequeredFlag | …
   message: string;
@@ -165,7 +186,7 @@ export interface OpenF1RaceControl {
   session_key: number;
 }
 
-export interface OpenF1Weather {
+export interface FastF1Weather {
   date: string;
   air_temperature: number;
   track_temperature: number;
@@ -180,31 +201,31 @@ export interface OpenF1Weather {
 // ─── New live-data functions ─────────────────────────────────────────────────
 
 /** All gap/interval updates for a session (latest per driver is most current) */
-export async function getIntervals(sessionKey: number): Promise<OpenF1Interval[]> {
-  return fetchJson<OpenF1Interval[]>("/intervals", { session_key: String(sessionKey) });
+export async function getIntervals(sessionKey: number): Promise<FastF1Interval[]> {
+  return fetchJson<FastF1Interval[]>("/intervals", { session_key: String(sessionKey) });
 }
 
 /** All pit stop events recorded for this session */
-export async function getPitStops(sessionKey: number): Promise<OpenF1Pit[]> {
-  return fetchJson<OpenF1Pit[]>("/pit", { session_key: String(sessionKey) });
+export async function getPitStops(sessionKey: number): Promise<FastF1Pit[]> {
+  return fetchJson<FastF1Pit[]>("/pit", { session_key: String(sessionKey) });
 }
 
 /** All tyre stints for this session */
-export async function getStints(sessionKey: number): Promise<OpenF1Stint[]> {
-  return fetchJson<OpenF1Stint[]>("/stints", { session_key: String(sessionKey) });
+export async function getStints(sessionKey: number): Promise<FastF1Stint[]> {
+  return fetchJson<FastF1Stint[]>("/stints", { session_key: String(sessionKey) });
 }
 
 /** Race-control messages (flags, safety car, DRS zones, etc.) */
-export async function getRaceControlMessages(sessionKey: number): Promise<OpenF1RaceControl[]> {
-  return fetchJson<OpenF1RaceControl[]>("/race_control", { session_key: String(sessionKey) });
+export async function getRaceControlMessages(sessionKey: number): Promise<FastF1RaceControl[]> {
+  return fetchJson<FastF1RaceControl[]>("/race_control", { session_key: String(sessionKey) });
 }
 
 /** Weather data (sampled periodically) */
-export async function getWeather(sessionKey: number): Promise<OpenF1Weather[]> {
-  return fetchJson<OpenF1Weather[]>("/weather", { session_key: String(sessionKey) });
+export async function getWeather(sessionKey: number): Promise<FastF1Weather[]> {
+  return fetchJson<FastF1Weather[]>("/weather", { session_key: String(sessionKey) });
 }
 
 /** All lap records for the session (used for fastest-lap tracking) */
-export async function getAllLaps(sessionKey: number): Promise<OpenF1Lap[]> {
-  return fetchJson<OpenF1Lap[]>("/laps", { session_key: String(sessionKey) });
+export async function getAllLaps(sessionKey: number): Promise<FastF1Lap[]> {
+  return fetchJson<FastF1Lap[]>("/laps", { session_key: String(sessionKey) });
 }

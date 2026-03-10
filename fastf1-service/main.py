@@ -1,7 +1,7 @@
 """
 FastF1 Bridge Service
-Exposes REST endpoints shaped like the old OpenF1 API so the Node.js
-backend needs zero changes beyond the base URL.
+Exposes REST endpoints compatible with the FastF1 data model.
+The Node.js backend connects to this service for all F1 data.
 
 Session key encoding:
   Race key:  year * 1000 + round   (e.g. 2025001 for 2025 R1)
@@ -109,8 +109,8 @@ def health():
 @app.get("/sessions")
 def sessions(year: int):
     """
-    Returns all Race and Qualifying sessions for the given year,
-    shaped like OpenF1 /sessions.
+    Returns all Race and Qualifying sessions for the given year.
+    Output format matches the expected REST API schema.
     """
     try:
         sched = fastf1.get_event_schedule(year, include_testing=False)
@@ -208,11 +208,27 @@ def laps(session_key: int):
     if sess.laps is not None and len(sess.laps) > 0:
         for _, lap in sess.laps.iterrows():
             out.append({
-                "driver_number":  int(lap["DriverNumber"]),
-                "lap_number":     int(lap["LapNumber"]),
-                "lap_duration":   _sec(lap.get("LapTime")),
-                "is_pit_out_lap": bool(pd.notna(lap.get("PitOutTime"))),
-                "session_key":    session_key,
+                "driver_number":   int(lap["DriverNumber"]),
+                "lap_number":      int(lap["LapNumber"]),
+                "lap_time":        _sec(lap.get("LapTime")),
+                "sector1_time":    _sec(lap.get("Sector1Time")),
+                "sector2_time":    _sec(lap.get("Sector2Time")),
+                "sector3_time":    _sec(lap.get("Sector3Time")),
+                "speed_i1":        float(lap.get("SpeedI1")) if pd.notna(lap.get("SpeedI1")) else None,
+                "speed_i2":        float(lap.get("SpeedI2")) if pd.notna(lap.get("SpeedI2")) else None,
+                "speed_fl":        float(lap.get("SpeedFL")) if pd.notna(lap.get("SpeedFL")) else None,
+                "speed_st":        float(lap.get("SpeedST")) if pd.notna(lap.get("SpeedST")) else None,
+                "compound":        _safe(lap.get("Compound")),
+                "tyre_life":       int(lap.get("TyreLife")) if pd.notna(lap.get("TyreLife")) else None,
+                "fresh_tyre":      bool(lap.get("FreshTyre")) if pd.notna(lap.get("FreshTyre")) else None,
+                "stint":           int(lap.get("Stint")) if pd.notna(lap.get("Stint")) else None,
+                "is_pit_out_lap":  bool(pd.notna(lap.get("PitOutTime"))),
+                "is_personal_best": bool(lap.get("IsPersonalBest")) if pd.notna(lap.get("IsPersonalBest")) else False,
+                "track_status":    _safe(lap.get("TrackStatus")),
+                "lap_start_time":  _iso(lap.get("LapStartTime")) if pd.notna(lap.get("LapStartTime")) else None,
+                "team":            _safe(lap.get("Team")),
+                "driver":          _safe(lap.get("Driver")),
+                "session_key":     session_key,
             })
     return out
 
@@ -271,21 +287,27 @@ def stints(session_key: int):
     year, rnd, is_q = _decode(session_key)
     sess = _load(year, rnd, "Q" if is_q else "R")
     out  = []
-    if sess.laps is not None and "Compound" in sess.laps.columns:
-        latest = (
-            sess.laps.sort_values("LapNumber")
-            .groupby("DriverNumber")
-            .last()
-            .reset_index()
-        )
-        for _, lap in latest.iterrows():
-            compound = (_safe(lap.get("Compound")) or "UNKNOWN").upper()
-            out.append({
-                "driver_number": int(lap["DriverNumber"]),
-                "compound":      compound,
-                "lap_start":     int(lap.get("Stint", 1)),
-                "session_key":   session_key,
-            })
+    if sess.laps is not None and "Compound" in sess.laps.columns and "Stint" in sess.laps.columns:
+        # Group by driver and stint to get all stints, not just the last one
+        for driver_num in sess.laps["DriverNumber"].unique():
+            driver_laps = sess.laps[sess.laps["DriverNumber"] == driver_num].sort_values("LapNumber")
+            for stint_num in driver_laps["Stint"].dropna().unique():
+                stint_laps = driver_laps[driver_laps["Stint"] == stint_num]
+                if len(stint_laps) == 0:
+                    continue
+                first_lap = stint_laps.iloc[0]
+                last_lap = stint_laps.iloc[-1]
+                compound = (_safe(first_lap.get("Compound")) or "UNKNOWN").upper()
+                out.append({
+                    "driver_number":    int(driver_num),
+                    "stint_number":     int(stint_num),
+                    "compound":         compound,
+                    "tyre_age_at_start": int(first_lap.get("TyreLife", 0)) if pd.notna(first_lap.get("TyreLife")) else 0,
+                    "lap_start":        int(first_lap["LapNumber"]),
+                    "lap_end":          int(last_lap["LapNumber"]) if pd.notna(last_lap["LapNumber"]) else None,
+                    "fresh_tyre":       bool(first_lap.get("FreshTyre")) if pd.notna(first_lap.get("FreshTyre")) else False,
+                    "session_key":      session_key,
+                })
     return out
 
 

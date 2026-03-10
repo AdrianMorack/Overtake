@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import prisma from "../config/database";
-import * as openF1 from "./openF1Client";
+import * as fastF1 from "./fastF1Client";
 
 // ─── F1 points scale (P1–P10) ────────────────────────────────────────────────
 const F1_PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
@@ -102,29 +102,29 @@ function fmtLapTime(seconds: number | null): string | null {
 async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
   // Fetch everything in parallel; degrade gracefully on partial failure
   const results = await Promise.allSettled([
-    openF1.getFinalPositions(sessionKey),     // [0] current positions
-    openF1.getSessionDrivers(sessionKey),     // [1] driver profiles
-    openF1.getIntervals(sessionKey),          // [2] gaps
-    openF1.getAllLaps(sessionKey),            // [3] all laps (for FL + last lap)
-    openF1.getPitStops(sessionKey),           // [4] pit events
-    openF1.getStints(sessionKey),             // [5] tyre stints
-    openF1.getRaceControlMessages(sessionKey), // [6] flags/SC/etc
-    openF1.getWeather(sessionKey),            // [7] weather samples
-    openF1.getSessions(new Date().getFullYear()), // [8] session metadata
+    fastF1.getFinalPositions(sessionKey),     // [0] current positions
+    fastF1.getSessionDrivers(sessionKey),     // [1] driver profiles
+    fastF1.getIntervals(sessionKey),          // [2] gaps
+    fastF1.getAllLaps(sessionKey),            // [3] all laps (for FL + last lap)
+    fastF1.getPitStops(sessionKey),           // [4] pit events
+    fastF1.getStints(sessionKey),             // [5] tyre stints
+    fastF1.getRaceControlMessages(sessionKey), // [6] flags/SC/etc
+    fastF1.getWeather(sessionKey),            // [7] weather samples
+    fastF1.getSessions(new Date().getFullYear()), // [8] session metadata
   ]);
 
   const ok = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
     r.status === "fulfilled" ? r.value : fallback;
 
-  const positions   = ok(results[0], [] as openF1.OpenF1Position[]);
-  const drivers     = ok(results[1], [] as openF1.OpenF1Driver[]);
-  const intervals   = ok(results[2], [] as openF1.OpenF1Interval[]);
-  const allLaps     = ok(results[3], [] as openF1.OpenF1Lap[]);
-  const pits        = ok(results[4], [] as openF1.OpenF1Pit[]);
-  const stints      = ok(results[5], [] as openF1.OpenF1Stint[]);
-  const raceCtrl    = ok(results[6], [] as openF1.OpenF1RaceControl[]);
-  const weatherData = ok(results[7], [] as openF1.OpenF1Weather[]);
-  const sessions    = ok(results[8], [] as openF1.OpenF1Session[]);
+  const positions   = ok(results[0], [] as fastF1.FastF1Position[]);
+  const drivers     = ok(results[1], [] as fastF1.FastF1Driver[]);
+  const intervals   = ok(results[2], [] as fastF1.FastF1Interval[]);
+  const allLaps     = ok(results[3], [] as fastF1.FastF1Lap[]);
+  const pits        = ok(results[4], [] as fastF1.FastF1Pit[]);
+  const stints      = ok(results[5], [] as fastF1.FastF1Stint[]);
+  const raceCtrl    = ok(results[6], [] as fastF1.FastF1RaceControl[]);
+  const weatherData = ok(results[7], [] as fastF1.FastF1Weather[]);
+  const sessions    = ok(results[8], [] as fastF1.FastF1Session[]);
 
   const sess = sessions.find((s) => s.session_key === sessionKey);
 
@@ -132,7 +132,7 @@ async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
   const driverByNum = new Map(drivers.map((d) => [d.driver_number, d]));
 
   // Latest interval per driver
-  const latestInterval = new Map<number, openF1.OpenF1Interval>();
+  const latestInterval = new Map<number, fastF1.FastF1Interval>();
   for (const i of intervals) {
     const ex = latestInterval.get(i.driver_number);
     if (!ex || i.date > ex.date) latestInterval.set(i.driver_number, i);
@@ -140,12 +140,12 @@ async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
 
   // Per-driver: personal best lap time & latest finished lap
   const personalBest = new Map<number, number>();
-  const latestLap = new Map<number, openF1.OpenF1Lap>();
+  const latestLap = new Map<number, fastF1.FastF1Lap>();
   for (const lap of allLaps) {
-    if (!lap.is_pit_out_lap && lap.lap_duration != null) {
+    if (!lap.is_pit_out_lap && lap.lap_time != null) {
       const best = personalBest.get(lap.driver_number);
-      if (best == null || lap.lap_duration < best) {
-        personalBest.set(lap.driver_number, lap.lap_duration);
+      if (best == null || lap.lap_time < best) {
+        personalBest.set(lap.driver_number, lap.lap_time);
       }
     }
     const ll = latestLap.get(lap.driver_number);
@@ -204,7 +204,7 @@ async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
         position: pos.position,
         gap: fmtGap(intv?.gap_to_leader ?? null),
         interval: fmtGap(intv?.interval ?? null),
-        lastLapTime: fmtLapTime(ll?.lap_duration ?? null),
+        lastLapTime: fmtLapTime(ll?.lap_time ?? null),
         fastestLapTime: fmtLapTime(best),
         isFastest: pos.driver_number === flDriverNum,
         pitStops: pitCount.get(pos.driver_number) ?? 0,
@@ -253,7 +253,7 @@ async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
     weather,
     fastestLapDriverCode,
     topTeamByF1Points,
-    totalLaps: null, // OpenF1 doesn't expose scheduled lap count; set externally if known
+    totalLaps: null, // FastF1 doesn't expose scheduled lap count; set externally if known
   };
 }
 

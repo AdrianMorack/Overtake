@@ -90,7 +90,7 @@ model GridUserStats {
 
 model Driver {
   id          String @id @default(cuid())
-  externalId  Int?   @unique @map("external_id") // OpenF1 driver number
+  externalId  Int?   @unique @map("external_id") // FastF1 driver number
   firstName   String @map("first_name")
   lastName    String @map("last_name")
   code        String @db.VarChar(3) // e.g. VER, HAM
@@ -119,8 +119,8 @@ model Team {
 
 model RaceWeekend {
   id               String    @id @default(cuid())
-  externalId       Int?      @unique @map("external_id")    // OpenF1 race session key
-  qualiSessionKey  Int?      @map("quali_session_key")       // OpenF1 qualifying session key
+  externalId       Int?      @unique @map("external_id")    // FastF1 race session key
+  qualiSessionKey  Int?      @map("quali_session_key")       // FastF1 qualifying session key
   season           Int
   round            Int
   raceName         String    @map("race_name")

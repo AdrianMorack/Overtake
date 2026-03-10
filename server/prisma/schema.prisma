@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -98,17 +99,18 @@ model Team {
 // ─── Race Weekends ──────────────────────────────────────────────────────────
 
 model RaceWeekend {
-  id              String   @id @default(cuid())
-  externalId      Int?     @unique @map("external_id") // OpenF1 session key
-  season          Int
-  round           Int
-  raceName        String   @map("race_name")
-  circuitName     String   @map("circuit_name")
-  country         String
-  raceDate        DateTime @map("race_date")
-  qualifyingDate  DateTime? @map("qualifying_date")
-  predictionsLock DateTime  @map("predictions_lock") // no predictions after this
-  status          RaceStatus @default(UPCOMING)
+  id               String    @id @default(cuid())
+  externalId       Int?      @unique @map("external_id")    // OpenF1 race session key
+  qualiSessionKey  Int?      @map("quali_session_key")       // OpenF1 qualifying session key
+  season           Int
+  round            Int
+  raceName         String    @map("race_name")
+  circuitName      String    @map("circuit_name")
+  country          String
+  raceDate         DateTime  @map("race_date")
+  qualifyingDate   DateTime? @map("qualifying_date")
+  predictionsLock  DateTime  @map("predictions_lock")
+  status           RaceStatus @default(UPCOMING)
 
   results     RaceResult?
   predictions Prediction[]

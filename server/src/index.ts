@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth";
 import gridRoutes from "./routes/grids";
 import predictionRoutes from "./routes/predictions";
 import raceRoutes from "./routes/races";
+import liveRoutes from "./routes/live";
 import { startSyncJobs, syncSeasonData } from "./jobs/syncF1Data";
 
 const app = express();
@@ -19,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/grids", gridRoutes);
 app.use("/api/predictions", predictionRoutes);
 app.use("/api/races", raceRoutes);
+app.use("/api/live", liveRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {

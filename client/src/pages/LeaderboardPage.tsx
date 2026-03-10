@@ -15,6 +15,7 @@ export function LeaderboardPage() {
   }, [gridId]);
 
   const upcomingRaces = races.filter((r) => r.status === "UPCOMING");
+  const liveRaces     = races.filter((r) => r.status === "IN_PROGRESS");
 
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 24 }}>
@@ -43,6 +44,20 @@ export function LeaderboardPage() {
       </table>
 
       <h3 style={{ marginTop: 32 }}>Upcoming Races</h3>
+      {liveRaces.map((r) => (
+        <div key={r.id} style={{ background: "#1a0000", border: "1px solid #e10600", padding: 12, borderRadius: 6, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <span style={{ background: "#e10600", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, marginRight: 8 }}>● LIVE</span>
+            <strong>{r.raceName}</strong>
+          </div>
+          <Link
+            to={`/grids/${gridId}/live/${r.id}`}
+            style={{ padding: "6px 12px", background: "#e10600", color: "#fff", borderRadius: 4, textDecoration: "none", fontSize: 13, fontWeight: 600 }}
+          >
+            Watch Live
+          </Link>
+        </div>
+      ))}
       {upcomingRaces.map((r) => (
         <div key={r.id} style={{ background: "#f5f5f5", padding: 12, borderRadius: 6, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>

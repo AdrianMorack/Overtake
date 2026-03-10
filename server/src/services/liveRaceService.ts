@@ -1,0 +1,406 @@
+import { EventEmitter } from "events";
+import prisma from "../config/database";
+import * as openF1 from "./openF1Client";
+
+// ─── F1 points scale (P1–P10) ────────────────────────────────────────────────
+const F1_PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+
+// ─── Public types ─────────────────────────────────────────────────────────────
+
+export interface DriverLiveData {
+  number: number;
+  code: string;
+  firstName: string;
+  lastName: string;
+  teamName: string;
+  teamColor: string | null;
+  position: number;
+  gap: string;        // e.g. "+3.421" or "1 LAP"
+  interval: string;   // gap to car ahead
+  lastLapTime: string | null;    // "1:28.456"
+  fastestLapTime: string | null; // personal best this session
+  isFastest: boolean; // holds the overall fastest lap
+  pitStops: number;
+  compound: string | null; // SOFT | MEDIUM | HARD | WET | INTER
+}
+
+export interface RaceControlMsg {
+  date: string;
+  category: string;
+  message: string;
+  flag: string | null;
+}
+
+export interface WeatherSnapshot {
+  airTemp: number;
+  trackTemp: number;
+  humidity: number;
+  windSpeed: number;
+  rainfall: boolean;
+}
+
+export interface LiveRaceSnapshot {
+  sessionKey: number;
+  sessionName: string;
+  sessionType: string;  // "Race" | "Qualifying" | "Sprint" | …
+  isActive: boolean;
+  updatedAt: string;    // ISO timestamp
+  drivers: DriverLiveData[];
+  raceControl: RaceControlMsg[];
+  weather: WeatherSnapshot | null;
+  fastestLapDriverCode: string | null;
+  topTeamByF1Points: string | null;
+  totalLaps: number | null;
+}
+
+export interface PointBreakdownLive {
+  qualiFirst: number;
+  qualiSecond: number;
+  qualiThird: number;
+  raceFirst: number;
+  raceSecond: number;
+  raceThird: number;
+  fastestLap: number;
+  topTeam: number;
+}
+
+export interface UserLivePoints {
+  userId: string;
+  username: string;
+  avatarUrl: string | null;
+  livePoints: number;
+  breakdown: PointBreakdownLive;
+}
+
+// ─── Pub/Sub emitter ─────────────────────────────────────────────────────────
+// Emits `update:<sessionKey>` with a LiveRaceSnapshot payload.
+export const liveEmitter = new EventEmitter();
+liveEmitter.setMaxListeners(500);
+
+// ─── In-memory state ─────────────────────────────────────────────────────────
+const snapshots = new Map<number, LiveRaceSnapshot>();
+const pollers = new Map<number, ReturnType<typeof setInterval>>();
+
+// ─── Formatting helpers ───────────────────────────────────────────────────────
+
+function fmtGap(seconds: number | null): string {
+  if (seconds == null) return "";
+  if (seconds < 0) return `${Math.abs(Math.round(seconds))} LAP`;
+  if (seconds === 0) return "LEADER";
+  return `+${seconds.toFixed(3)}`;
+}
+
+function fmtLapTime(seconds: number | null): string | null {
+  if (seconds == null) return null;
+  const mins = Math.floor(seconds / 60);
+  const secs = (seconds % 60).toFixed(3).padStart(6, "0");
+  return `${mins}:${secs}`;
+}
+
+// ─── Core snapshot builder ────────────────────────────────────────────────────
+
+async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
+  // Fetch everything in parallel; degrade gracefully on partial failure
+  const results = await Promise.allSettled([
+    openF1.getFinalPositions(sessionKey),     // [0] current positions
+    openF1.getSessionDrivers(sessionKey),     // [1] driver profiles
+    openF1.getIntervals(sessionKey),          // [2] gaps
+    openF1.getAllLaps(sessionKey),            // [3] all laps (for FL + last lap)
+    openF1.getPitStops(sessionKey),           // [4] pit events
+    openF1.getStints(sessionKey),             // [5] tyre stints
+    openF1.getRaceControlMessages(sessionKey), // [6] flags/SC/etc
+    openF1.getWeather(sessionKey),            // [7] weather samples
+    openF1.getSessions(new Date().getFullYear()), // [8] session metadata
+  ]);
+
+  const ok = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
+    r.status === "fulfilled" ? r.value : fallback;
+
+  const positions   = ok(results[0], [] as openF1.OpenF1Position[]);
+  const drivers     = ok(results[1], [] as openF1.OpenF1Driver[]);
+  const intervals   = ok(results[2], [] as openF1.OpenF1Interval[]);
+  const allLaps     = ok(results[3], [] as openF1.OpenF1Lap[]);
+  const pits        = ok(results[4], [] as openF1.OpenF1Pit[]);
+  const stints      = ok(results[5], [] as openF1.OpenF1Stint[]);
+  const raceCtrl    = ok(results[6], [] as openF1.OpenF1RaceControl[]);
+  const weatherData = ok(results[7], [] as openF1.OpenF1Weather[]);
+  const sessions    = ok(results[8], [] as openF1.OpenF1Session[]);
+
+  const sess = sessions.find((s) => s.session_key === sessionKey);
+
+  // Build fast-lookup maps
+  const driverByNum = new Map(drivers.map((d) => [d.driver_number, d]));
+
+  // Latest interval per driver
+  const latestInterval = new Map<number, openF1.OpenF1Interval>();
+  for (const i of intervals) {
+    const ex = latestInterval.get(i.driver_number);
+    if (!ex || i.date > ex.date) latestInterval.set(i.driver_number, i);
+  }
+
+  // Per-driver: personal best lap time & latest finished lap
+  const personalBest = new Map<number, number>();
+  const latestLap = new Map<number, openF1.OpenF1Lap>();
+  for (const lap of allLaps) {
+    if (!lap.is_pit_out_lap && lap.lap_duration != null) {
+      const best = personalBest.get(lap.driver_number);
+      if (best == null || lap.lap_duration < best) {
+        personalBest.set(lap.driver_number, lap.lap_duration);
+      }
+    }
+    const ll = latestLap.get(lap.driver_number);
+    if (!ll || lap.lap_number > ll.lap_number) latestLap.set(lap.driver_number, lap);
+  }
+
+  // Overall fastest lap
+  let flDriverNum: number | null = null;
+  let flTime = Infinity;
+  for (const [num, t] of personalBest) {
+    if (t < flTime) { flTime = t; flDriverNum = num; }
+  }
+  const fastestLapDriverCode = flDriverNum
+    ? (driverByNum.get(flDriverNum)?.name_acronym ?? null)
+    : null;
+
+  // Pit stop count per driver
+  const pitCount = new Map<number, number>();
+  for (const pit of pits) {
+    pitCount.set(pit.driver_number, (pitCount.get(pit.driver_number) ?? 0) + 1);
+  }
+
+  // Current tyre compound per driver (last stint)
+  const compound = new Map<number, string>();
+  for (const s of stints) compound.set(s.driver_number, s.compound);
+
+  // Team F1 points from current positions
+  const teamF1Pts = new Map<string, number>();
+  for (const pos of positions) {
+    const drv = driverByNum.get(pos.driver_number);
+    if (!drv) continue;
+    const pts = F1_PTS[pos.position - 1] ?? 0;
+    teamF1Pts.set(drv.team_name, (teamF1Pts.get(drv.team_name) ?? 0) + pts);
+  }
+  let topTeamByF1Points: string | null = null;
+  let maxPts = -1;
+  for (const [team, pts] of teamF1Pts) {
+    if (pts > maxPts) { maxPts = pts; topTeamByF1Points = team; }
+  }
+
+  // Build driver list sorted by position
+  const driverList: DriverLiveData[] = positions
+    .sort((a, b) => a.position - b.position)
+    .map((pos) => {
+      const drv = driverByNum.get(pos.driver_number);
+      const intv = latestInterval.get(pos.driver_number);
+      const ll = latestLap.get(pos.driver_number);
+      const best = personalBest.get(pos.driver_number) ?? null;
+      return {
+        number: pos.driver_number,
+        code: drv?.name_acronym ?? "???",
+        firstName: drv?.first_name ?? "",
+        lastName: drv?.last_name ?? "",
+        teamName: drv?.team_name ?? "",
+        teamColor: drv?.team_colour ? `#${drv.team_colour}` : null,
+        position: pos.position,
+        gap: fmtGap(intv?.gap_to_leader ?? null),
+        interval: fmtGap(intv?.interval ?? null),
+        lastLapTime: fmtLapTime(ll?.lap_duration ?? null),
+        fastestLapTime: fmtLapTime(best),
+        isFastest: pos.driver_number === flDriverNum,
+        pitStops: pitCount.get(pos.driver_number) ?? 0,
+        compound: compound.get(pos.driver_number) ?? null,
+      };
+    });
+
+  // Weather (latest sample)
+  let weather: WeatherSnapshot | null = null;
+  if (weatherData.length > 0) {
+    const w = weatherData[weatherData.length - 1];
+    weather = {
+      airTemp: w.air_temperature,
+      trackTemp: w.track_temperature,
+      humidity: w.humidity,
+      windSpeed: w.wind_speed,
+      rainfall: w.rainfall,
+    };
+  }
+
+  // Race control (last 30 messages most recent first)
+  const raceControl: RaceControlMsg[] = [...raceCtrl]
+    .sort((a, b) => (a.date > b.date ? -1 : 1))
+    .slice(0, 30)
+    .map((rc) => ({
+      date: rc.date,
+      category: rc.category,
+      message: rc.message,
+      flag: rc.flag ?? null,
+    }));
+
+  const now = new Date().toISOString();
+  const isActive = sess
+    ? new Date(sess.date_start) <= new Date() &&
+      (!sess.date_end || new Date(sess.date_end) >= new Date())
+    : false;
+
+  return {
+    sessionKey,
+    sessionName: sess?.session_name ?? "Session",
+    sessionType: sess?.session_name ?? "Unknown",
+    isActive,
+    updatedAt: now,
+    drivers: driverList,
+    raceControl,
+    weather,
+    fastestLapDriverCode,
+    topTeamByF1Points,
+    totalLaps: null, // OpenF1 doesn't expose scheduled lap count; set externally if known
+  };
+}
+
+// ─── Polling control ─────────────────────────────────────────────────────────
+
+export async function startPolling(sessionKey: number, intervalMs = 5_000) {
+  if (pollers.has(sessionKey)) return;
+  console.log(`[Live] Polling started for session ${sessionKey}`);
+
+  const tick = async () => {
+    try {
+      const snap = await buildSnapshot(sessionKey);
+      snapshots.set(sessionKey, snap);
+      liveEmitter.emit(`update:${sessionKey}`, snap);
+    } catch (err) {
+      console.error(`[Live] Poll error session ${sessionKey}:`, err);
+    }
+  };
+
+  await tick(); // Immediate first update
+  pollers.set(sessionKey, setInterval(tick, intervalMs));
+}
+
+export function stopPolling(sessionKey: number) {
+  const t = pollers.get(sessionKey);
+  if (t) { clearInterval(t); pollers.delete(sessionKey); }
+  console.log(`[Live] Polling stopped for session ${sessionKey}`);
+}
+
+export function getSnapshot(sessionKey: number): LiveRaceSnapshot | null {
+  return snapshots.get(sessionKey) ?? null;
+}
+
+// ─── Live points calculation ──────────────────────────────────────────────────
+
+export async function getLivePointsForGrid(
+  snapshot: LiveRaceSnapshot,
+  raceWeekendId: string,
+  gridId: string,
+): Promise<UserLivePoints[]> {
+  const predictions = await prisma.prediction.findMany({
+    where: { raceWeekendId, gridId },
+    include: { user: { select: { id: true, username: true, avatarUrl: true } } },
+  });
+
+  // Fetch stored results in case quali is already finalized
+  const raceWeekend = await prisma.raceWeekend.findUnique({
+    where: { id: raceWeekendId },
+    include: { results: true },
+  });
+
+  const top3 = snapshot.drivers.slice(0, 3);
+  const isRaceSession = snapshot.sessionType === "Race" || snapshot.sessionName === "Race";
+  const norm = (s: string) => s.trim().toUpperCase();
+
+  type PredictionRow = (typeof predictions)[number];
+
+  return predictions.map((pred: PredictionRow) => {
+    let qualiFirst = 0, qualiSecond = 0, qualiThird = 0;
+    let raceFirst = 0, raceSecond = 0, raceThird = 0;
+    let fastestLap = 0, topTeam = 0;
+
+    if (isRaceSession) {
+      // Race: use current live positions for race-category predictions
+      raceFirst  = top3[0]?.code === norm(pred.raceFirst)  ? 3 : 0;
+      raceSecond = top3[1]?.code === norm(pred.raceSecond) ? 2 : 0;
+      raceThird  = top3[2]?.code === norm(pred.raceThird)  ? 1 : 0;
+      fastestLap = snapshot.fastestLapDriverCode === norm(pred.fastestLap) ? 2 : 0;
+      topTeam    = snapshot.topTeamByF1Points === norm(pred.topTeam) ? 1 : 0;
+
+      // Quali points: use stored results if available, otherwise live snapshot
+      const qr = raceWeekend?.results;
+      if (qr) {
+        qualiFirst  = qr.qualiFirst  === norm(pred.qualiFirst)  ? 3 : 0;
+        qualiSecond = qr.qualiSecond === norm(pred.qualiSecond) ? 2 : 0;
+        qualiThird  = qr.qualiThird  === norm(pred.qualiThird)  ? 1 : 0;
+      }
+    } else {
+      // Qualifying session: only resolve qualifying positions
+      qualiFirst  = top3[0]?.code === norm(pred.qualiFirst)  ? 3 : 0;
+      qualiSecond = top3[1]?.code === norm(pred.qualiSecond) ? 2 : 0;
+      qualiThird  = top3[2]?.code === norm(pred.qualiThird)  ? 1 : 0;
+    }
+
+    const breakdown: PointBreakdownLive = {
+      qualiFirst, qualiSecond, qualiThird,
+      raceFirst, raceSecond, raceThird,
+      fastestLap, topTeam,
+    };
+    const livePoints = Object.values(breakdown).reduce((s, v) => s + v, 0);
+
+    return {
+      userId: pred.user.id,
+      username: pred.user.username,
+      avatarUrl: pred.user.avatarUrl ?? null,
+      livePoints,
+      breakdown,
+    };
+  });
+}
+
+// ─── Live session detection (called by cron) ──────────────────────────────────
+
+export async function detectAndManageLiveSessions(): Promise<void> {
+  const now = new Date();
+  const WINDOW_BEFORE_MS = 30 * 60 * 1000;  // 30 min early
+  const WINDOW_AFTER_MS  = 4 * 60 * 60 * 1000; // 4 h after start
+
+  const windowStart = new Date(now.getTime() - WINDOW_AFTER_MS);
+  const windowEnd   = new Date(now.getTime() + WINDOW_BEFORE_MS);
+
+  // Race sessions in window
+  const raceWeekends = await prisma.raceWeekend.findMany({
+    where: {
+      status: { not: "COMPLETED" },
+      raceDate: { gte: windowStart, lte: windowEnd },
+      externalId: { not: null },
+    },
+  });
+
+  for (const w of raceWeekends) {
+    if (w.externalId && !pollers.has(w.externalId)) {
+      await startPolling(w.externalId);
+    }
+  }
+
+  // Qualifying sessions in window
+  const qualiWeekends = await prisma.raceWeekend.findMany({
+    where: {
+      status: { not: "COMPLETED" },
+      qualifyingDate: { gte: windowStart, lte: windowEnd },
+      qualiSessionKey: { not: null },
+    },
+  });
+
+  for (const w of qualiWeekends) {
+    if (w.qualiSessionKey && !pollers.has(w.qualiSessionKey)) {
+      await startPolling(w.qualiSessionKey);
+    }
+  }
+
+  // Stop polling old sessions that finished more than 4 h ago
+  for (const [key] of pollers) {
+    const snap = snapshots.get(key);
+    if (snap && !snap.isActive) {
+      const age = Date.now() - new Date(snap.updatedAt).getTime();
+      if (age > WINDOW_AFTER_MS) stopPolling(key);
+    }
+  }
+}

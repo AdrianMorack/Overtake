@@ -8,6 +8,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { PredictPage } from "./pages/PredictPage";
 import { RacesPage } from "./pages/RacesPage";
 import { ResultsPage } from "./pages/ResultsPage";
+import { LiveRacePage } from "./pages/LiveRacePage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -27,6 +28,7 @@ function AppRoutes() {
       <Route path="/grids/:gridId" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
       <Route path="/grids/:gridId/race/:raceId/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
       <Route path="/grids/:gridId/race/:raceId/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+      <Route path="/grids/:gridId/live/:raceWeekendId" element={<ProtectedRoute><LiveRacePage /></ProtectedRoute>} />
       <Route path="/races" element={<ProtectedRoute><RacesPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>

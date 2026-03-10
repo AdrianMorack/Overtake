@@ -2,6 +2,7 @@ import { CronJob } from "cron";
 import prisma from "../config/database";
 import * as openF1 from "../services/openF1Client";
 import { scoreRace } from "../services/scoringService";
+import { detectAndManageLiveSessions } from "../services/liveRaceService";
 
 /**
  * Sync race schedule, drivers, teams from OpenF1 for a given season.
@@ -14,10 +15,12 @@ export async function syncSeasonData(year: number = 2025) {
   const { races, qualis } = await openF1.getRaceAndQualiSessions(year);
   console.log(`[Sync] Found ${races.length} races, ${qualis.length} qualifyings`);
 
-  // Build a map of meeting_key → qualifying date
+  // Build maps from meeting_key → qualifying date and qualifying session_key
   const qualiDateByMeeting = new Map<number, string>();
+  const qualiKeyByMeeting  = new Map<number, number>();
   for (const q of qualis) {
     qualiDateByMeeting.set(q.meeting_key, q.date_start);
+    qualiKeyByMeeting.set(q.meeting_key, q.session_key);
   }
 
   // 2. Upsert race weekends
@@ -30,10 +33,13 @@ export async function syncSeasonData(year: number = 2025) {
       ? new Date(new Date(qualiDate).getTime() - 60 * 60 * 1000)
       : new Date(raceDate.getTime() - 3 * 60 * 60 * 1000);
 
+    const qualiSessionKey = qualiKeyByMeeting.get(race.meeting_key) ?? null;
+
     await prisma.raceWeekend.upsert({
       where: { externalId: race.session_key },
       create: {
         externalId: race.session_key,
+        qualiSessionKey,
         season: year,
         round: i + 1,
         raceName: `${race.country_name} Grand Prix`,
@@ -44,6 +50,7 @@ export async function syncSeasonData(year: number = 2025) {
         predictionsLock: lockDate,
       },
       update: {
+        qualiSessionKey,
         raceName: `${race.country_name} Grand Prix`,
         circuitName: race.circuit_short_name,
         raceDate,
@@ -189,6 +196,9 @@ export function startSyncJobs() {
 
   // Check for race results every 30 minutes
   new CronJob("*/30 * * * *", () => syncRaceResults().catch(console.error), null, true, "UTC");
+
+  // Detect live sessions and start/stop polling every minute
+  new CronJob("* * * * *", () => detectAndManageLiveSessions().catch(console.error), null, true, "UTC");
 
   console.log("[Cron] Sync jobs started");
 }

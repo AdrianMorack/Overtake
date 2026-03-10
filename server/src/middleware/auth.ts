@@ -16,15 +16,18 @@ declare global {
 }
 
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
+  // Support token in Authorization header OR ?token= query param (needed for EventSource / SSE)
   const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
+  const queryToken = req.query.token as string | undefined;
+
+  const raw = header?.startsWith("Bearer ") ? header.slice(7) : queryToken;
+  if (!raw) {
     res.status(401).json({ error: "Missing or invalid authorization header" });
     return;
   }
 
-  const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, env.jwtSecret) as AuthPayload;
+    const payload = jwt.verify(raw, env.jwtSecret) as AuthPayload;
     req.user = payload;
     next();
   } catch {

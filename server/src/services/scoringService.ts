@@ -9,6 +9,7 @@ interface PointBreakdown {
   raceThird: number;
   fastestLap: number;
   topTeam: number;
+  [key: string]: number;
 }
 
 /**

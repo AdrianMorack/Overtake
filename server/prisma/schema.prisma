@@ -67,6 +67,25 @@ model GridMembership {
   @@map("grid_memberships")
 }
 
+// ─── Grid User Stats (Aggregated) ───────────────────────────────────────────
+
+model GridUserStats {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  gridId         String   @map("grid_id")
+  totalPoints    Int      @default(0) @map("total_points")
+  racesPlayed    Int      @default(0) @map("races_played")
+  bestFinish     Int?     @map("best_finish")      // Best leaderboard position
+  averagePoints  Float?   @map("average_points")
+  perfectScores  Int      @default(0) @map("perfect_scores") // Number of perfect predictions
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, gridId])
+  @@index([gridId])
+  @@index([gridId, totalPoints])
+  @@map("grid_user_stats")
+}
+
 // ─── F1 Reference Data ──────────────────────────────────────────────────────
 
 model Driver {

@@ -273,7 +273,7 @@ export async function startPolling(sessionKey: number, intervalMs = 5_000) {
     }
   };
 
-  await tick(); // Immediate first update
+  tick(); // Fire initial update without blocking
   pollers.set(sessionKey, setInterval(tick, intervalMs));
 }
 

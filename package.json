@@ -2,7 +2,7 @@
   "name": "overtake",
   "private": true,
   "scripts": {
-    "dev": "concurrently --names \"server,client\" --prefix-colors \"red,cyan\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev": "concurrently --kill-others --kill-others-on-fail --names \"fastf1,server,client\" --prefix-colors \"yellow,red,cyan\" \"/Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m uvicorn fastf1-service.main:app --host 0.0.0.0 --port 8100 --reload\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "build:server": "npm run build --prefix server",
     "build:client": "npm run build --prefix client",
     "install:all": "npm install --prefix server && npm install --prefix client"

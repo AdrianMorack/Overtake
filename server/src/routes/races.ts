@@ -5,9 +5,7 @@ import { syncSeasonData, syncRaceResults } from "../jobs/syncF1Data";
 
 const router = Router();
 
-router.use(authenticate);
-
-// Admin: manually trigger a season data sync (no auth role check — dev convenience)
+// Admin: manually trigger a season data sync (no auth required — dev convenience)
 router.post("/admin/sync", async (req: Request, res: Response) => {
   const year = req.query.year ? parseInt(req.query.year as string, 10) : 2025;
   try {
@@ -19,6 +17,8 @@ router.post("/admin/sync", async (req: Request, res: Response) => {
     res.status(500).json({ error: msg });
   }
 });
+
+router.use(authenticate);
 
 router.get("/weekends", async (req: Request, res: Response) => {
   const season = req.query.season ? parseInt(req.query.season as string, 10) : undefined;

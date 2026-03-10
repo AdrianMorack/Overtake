@@ -121,9 +121,8 @@ class ApiClient {
   }
 
   // ── Races ─────────────────────────────────────────────────────────────────
-  getRaceWeekends(season?: number) {
-    const params = season ? `?season=${season}` : "";
-    return this.request<RaceWeekend[]>(`/races/weekends${params}`);
+  getRaceWeekends(season: number = 2026) {
+    return this.request<RaceWeekend[]>(`/races/weekends?season=${season}`);
   }
 
   getDrivers(season?: number) {

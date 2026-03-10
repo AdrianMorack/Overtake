@@ -1,6 +1,6 @@
 import prisma from "../config/database";
 
-export async function getRaceWeekends(season: number = 2025) {
+export async function getRaceWeekends(season: number = 2026) {
   return prisma.raceWeekend.findMany({
     where: { season },
     orderBy: { round: "asc" },

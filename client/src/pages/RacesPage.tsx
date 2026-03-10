@@ -5,15 +5,24 @@ import { RaceWeekend } from "../types";
 
 export function RacesPage() {
   const [races, setRaces] = useState<RaceWeekend[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getRaceWeekends().then(setRaces).catch(console.error);
+    api.getRaceWeekends()
+      .then(setRaces)
+      .catch((e) => setError(e.message ?? "Failed to load"))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 24 }}>
       <Link to="/dashboard" style={{ color: "#e10600" }}>← Dashboard</Link>
       <h2 style={{ marginTop: 16 }}>Race Calendar</h2>
+
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: "red" }}>Error: {error}</p>}
+      {!loading && !error && races.length === 0 && <p>No races found.</p>}
 
       {races.map((r) => (
         <div

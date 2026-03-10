@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../api/client";
-import { LeaderboardEntry, RaceWeekend } from "../types";
+import { LeaderboardEntry, RaceWeekend, Prediction } from "../types";
 
 export function LeaderboardPage() {
   const { gridId } = useParams<{ gridId: string }>();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [races, setRaces] = useState<RaceWeekend[]>([]);
+  const [myPredictions, setMyPredictions] = useState<Prediction[]>([]);
 
   useEffect(() => {
     if (!gridId) return;
     api.getLeaderboard(gridId).then(setEntries).catch(console.error);
     api.getRaceWeekends().then(setRaces).catch(console.error);
+    api.getMyPredictions(gridId).then(setMyPredictions).catch(console.error);
   }, [gridId]);
 
   const upcomingRaces = races.filter((r) => r.status === "UPCOMING");
@@ -58,22 +60,42 @@ export function LeaderboardPage() {
           </Link>
         </div>
       ))}
-      {upcomingRaces.map((r) => (
-        <div key={r.id} style={{ background: "#f5f5f5", padding: 12, borderRadius: 6, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {upcomingRaces.map((r, index) => {
+        const isNextRace = index === 0; // First upcoming race
+        const hasPrediction = myPredictions.some(p => p.raceWeekendId === r.id);
+        return (
+        <div key={r.id} style={{ 
+          background: isNextRace ? "#d4edda" : "#f5f5f5", 
+          borderLeft: isNextRace ? "4px solid #28a745" : "none",
+          padding: 12, 
+          borderRadius: 6, 
+          marginBottom: 8, 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center" 
+        }}>
           <div>
-            <strong>{r.raceName}</strong>
-            <span style={{ marginLeft: 8, fontSize: 13, color: "#666" }}>
+            <strong style={{ color: isNextRace ? "#155724" : "inherit" }}>{r.raceName}</strong>
+            <span style={{ marginLeft: 8, fontSize: 13, color: isNextRace ? "#155724" : "#666" }}>
               {new Date(r.raceDate).toLocaleDateString()}
             </span>
           </div>
           <Link
             to={`/grids/${gridId}/race/${r.id}/predict`}
-            style={{ padding: "6px 12px", background: "#e10600", color: "#fff", borderRadius: 4, textDecoration: "none", fontSize: 13, fontWeight: 600 }}
+            style={{ 
+              padding: "6px 12px", 
+              background: isNextRace ? "#28a745" : "#e10600", 
+              color: "#fff", 
+              borderRadius: 4, 
+              textDecoration: "none", 
+              fontSize: 13, 
+              fontWeight: 600 
+            }}
           >
-            Predict
+            {hasPrediction ? "Edit" : "Predict"}
           </Link>
         </div>
-      ))}
+      )})}
     </div>
   );
 }

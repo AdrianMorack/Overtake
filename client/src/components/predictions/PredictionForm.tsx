@@ -15,6 +15,8 @@ export function PredictionForm({ raceWeekendId, gridId, onSuccess }: Props) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false);
 
   const [form, setForm] = useState({
     qualiFirst: "",
@@ -28,11 +30,31 @@ export function PredictionForm({ raceWeekendId, gridId, onSuccess }: Props) {
   });
 
   useEffect(() => {
-    Promise.all([api.getDrivers(), api.getTeams()]).then(([d, t]) => {
+    Promise.all([
+      api.getDrivers(),
+      api.getTeams(),
+      api.getMyPredictions(gridId)
+    ]).then(([d, t, predictions]) => {
       setDrivers(d);
       setTeams(t);
+      
+      // Pre-fill if existing prediction for this race
+      const existing = predictions.find(p => p.raceWeekendId === raceWeekendId);
+      if (existing) {
+        setForm({
+          qualiFirst: existing.qualiFirst,
+          qualiSecond: existing.qualiSecond,
+          qualiThird: existing.qualiThird,
+          raceFirst: existing.raceFirst,
+          raceSecond: existing.raceSecond,
+          raceThird: existing.raceThird,
+          fastestLap: existing.fastestLap,
+          topTeam: existing.topTeam,
+        });
+        setIsUpdate(true);
+      }
     });
-  }, []);
+  }, [gridId, raceWeekendId]);
 
   const setField = (field: keyof typeof form) => (value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -47,7 +69,9 @@ export function PredictionForm({ raceWeekendId, gridId, onSuccess }: Props) {
     setError("");
     try {
       await api.submitPrediction({ raceWeekendId, gridId, ...form });
-      onSuccess();
+      setSuccess(true);
+      // Auto-navigate after 2 seconds
+      setTimeout(() => onSuccess(), 2000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -71,24 +95,36 @@ export function PredictionForm({ raceWeekendId, gridId, onSuccess }: Props) {
       <DriverAutocomplete drivers={drivers} value={form.fastestLap} onChange={setField("fastestLap")} label="Fastest Lap" />
       <TeamAutocomplete teams={teams} value={form.topTeam} onChange={setField("topTeam")} label="Team with Most Points" />
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p style={{ color: "red", marginTop: 16 }}>{error}</p>}
+      {success && (
+        <div style={{ 
+          marginTop: 16, 
+          padding: 16, 
+          background: "#d4edda", 
+          color: "#155724",
+          borderRadius: 6,
+          fontWeight: 600
+        }}>
+          ✓ Predictions {isUpdate ? "updated" : "submitted"} successfully! Redirecting...
+        </div>
+      )}
 
       <button
         type="submit"
-        disabled={!allFilled || loading}
+        disabled={!allFilled || loading || success}
         style={{
           marginTop: 16,
           padding: "10px 24px",
-          background: allFilled ? "#e10600" : "#ccc",
+          background: (allFilled && !success) ? "#e10600" : "#ccc",
           color: "#fff",
           border: "none",
           borderRadius: 6,
           fontSize: 16,
           fontWeight: 700,
-          cursor: allFilled ? "pointer" : "not-allowed",
+          cursor: (allFilled && !success) ? "pointer" : "not-allowed",
         }}
       >
-        {loading ? "Submitting…" : "Submit Predictions"}
+        {loading ? "Submitting…" : isUpdate ? "Update Predictions" : "Submit Predictions"}
       </button>
     </form>
   );

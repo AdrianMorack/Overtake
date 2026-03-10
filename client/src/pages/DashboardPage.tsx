@@ -28,10 +28,16 @@ export function DashboardPage() {
       </div>
 
       {nextRace && (
-        <div style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 24 }}>
-          <h3>Next Race: {nextRace.raceName}</h3>
+        <div style={{ 
+          background: "#d4edda", 
+          borderLeft: "4px solid #28a745",
+          padding: 16, 
+          borderRadius: 8, 
+          marginBottom: 24 
+        }}>
+          <h3 style={{ color: "#155724" }}>Next Race: {nextRace.raceName}</h3>
           <p>{nextRace.circuitName} — {new Date(nextRace.raceDate).toLocaleDateString()}</p>
-          <p style={{ fontSize: 13, color: "#666" }}>
+          <p style={{ fontSize: 13, color: "#155724" }}>
             Predictions lock: {new Date(nextRace.predictionsLock).toLocaleString()}
           </p>
         </div>

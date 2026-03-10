@@ -57,6 +57,11 @@ class ApiClient {
       throw new Error(body.error || `Request failed: ${res.status}`);
     }
 
+    // Handle 204 No Content responses (e.g., delete operations)
+    if (res.status === 204) {
+      return undefined as T;
+    }
+
     return res.json();
   }
 

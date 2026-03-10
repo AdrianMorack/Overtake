@@ -16,6 +16,7 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [newName, setNewName] = useState(gridName);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,6 +41,11 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
   };
 
   const handleDelete = async () => {
+    if (deleteConfirmation !== "DELETE") {
+      setError("Please type DELETE to confirm");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -144,12 +150,37 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
               This will permanently delete <strong>{gridName}</strong> and all associated
               predictions. This action cannot be undone.
             </p>
+            <p style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
+              Type <strong>DELETE</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmation}
+              onChange={(e) => {
+                setDeleteConfirmation(e.target.value);
+                setError("");
+              }}
+              placeholder="Type DELETE"
+              autoFocus
+              style={{ fontFamily: 'monospace' }}
+            />
             {error && <div className="error-message">{error}</div>}
             <div className="modal-actions">
-              <button onClick={() => setShowDeleteModal(false)} disabled={loading}>
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmation("");
+                  setError("");
+                }} 
+                disabled={loading}
+              >
                 Cancel
               </button>
-              <button onClick={handleDelete} disabled={loading} className="danger">
+              <button 
+                onClick={handleDelete} 
+                disabled={loading || deleteConfirmation !== "DELETE"} 
+                className="danger"
+              >
                 {loading ? "Deleting..." : "Delete Grid"}
               </button>
             </div>

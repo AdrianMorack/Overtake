@@ -19,7 +19,7 @@ import { env } from "../config/env";
 const BASE = env.openF1BaseUrl;
 
 async function fetchJson<T>(path: string, params: Record<string, string> = {}): Promise<T> {
-  const url = new URL(path, BASE);
+  const url = new URL(`${BASE}${path}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
   const res = await fetch(url.toString(), {

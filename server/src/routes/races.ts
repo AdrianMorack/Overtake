@@ -1,10 +1,24 @@
 import { Router, Request, Response } from "express";
 import { authenticate } from "../middleware/auth";
 import * as raceService from "../services/raceService";
+import { syncSeasonData, syncRaceResults } from "../jobs/syncF1Data";
 
 const router = Router();
 
 router.use(authenticate);
+
+// Admin: manually trigger a season data sync (no auth role check — dev convenience)
+router.post("/admin/sync", async (req: Request, res: Response) => {
+  const year = req.query.year ? parseInt(req.query.year as string, 10) : 2025;
+  try {
+    await syncSeasonData(year);
+    await syncRaceResults();
+    res.json({ message: `Sync complete for ${year}` });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
+  }
+});
 
 router.get("/weekends", async (req: Request, res: Response) => {
   const season = req.query.season ? parseInt(req.query.season as string, 10) : undefined;

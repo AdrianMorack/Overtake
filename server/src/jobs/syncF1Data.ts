@@ -8,7 +8,7 @@ import { detectAndManageLiveSessions } from "../services/liveRaceService";
  * Sync race schedule, drivers, teams from OpenF1 for a given season.
  * Intended to run once at the start of each season and periodically to pick up changes.
  */
-export async function syncSeasonData(year: number = 2025) {
+export async function syncSeasonData(year: number = 2026) {
   console.log(`[Sync] Starting season data sync for ${year}…`);
 
   // 1. Fetch sessions
@@ -128,10 +128,6 @@ export async function syncRaceResults() {
     if (!race.externalId) continue;
 
     try {
-      // Get qualifying results
-      const { qualis } = await openF1.getRaceAndQualiSessions(race.season);
-      const qualiSession = qualis.find((q) => q.meeting_key === race.externalId);
-
       // Get race final positions
       const racePositions = await openF1.getFinalPositions(race.externalId);
       if (racePositions.length < 3) {
@@ -139,10 +135,10 @@ export async function syncRaceResults() {
         continue;
       }
 
-      // Get qualifying final positions
+      // Get qualifying final positions using the stored qualiSessionKey
       let qualiPositions: Awaited<ReturnType<typeof openF1.getFinalPositions>> = [];
-      if (qualiSession) {
-        qualiPositions = await openF1.getFinalPositions(qualiSession.session_key);
+      if (race.qualiSessionKey) {
+        qualiPositions = await openF1.getFinalPositions(race.qualiSessionKey);
       }
 
       // Get fastest lap

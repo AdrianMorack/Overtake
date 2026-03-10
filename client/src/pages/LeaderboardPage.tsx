@@ -1,28 +1,54 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../api/client";
-import { LeaderboardEntry, RaceWeekend, Prediction } from "../types";
+import { LeaderboardEntry, RaceWeekend, Prediction, Grid } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import { GridAdminMenu } from "../components/grid/GridAdminMenu";
 
 export function LeaderboardPage() {
   const { gridId } = useParams<{ gridId: string }>();
+  const { user } = useAuth();
+  const [grid, setGrid] = useState<Grid | null>(null);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [myPredictions, setMyPredictions] = useState<Prediction[]>([]);
 
   useEffect(() => {
     if (!gridId) return;
+    
+    // Clear previous data when gridId changes
+    setGrid(null);
+    setEntries([]);
+    setMyPredictions([]);
+    
+    // Load new data
+    api.getGrid(gridId).then(setGrid).catch(console.error);
     api.getLeaderboard(gridId).then(setEntries).catch(console.error);
     api.getRaceWeekends().then(setRaces).catch(console.error);
     api.getMyPredictions(gridId).then(setMyPredictions).catch(console.error);
   }, [gridId]);
 
+  const loadData = () => {
+    if (!gridId) return;
+    api.getGrid(gridId).then(setGrid).catch(console.error);
+    api.getLeaderboard(gridId).then(setEntries).catch(console.error);
+    api.getRaceWeekends().then(setRaces).catch(console.error);
+    api.getMyPredictions(gridId).then(setMyPredictions).catch(console.error);
+  };
+
   const upcomingRaces = races.filter((r) => r.status === "UPCOMING");
   const liveRaces     = races.filter((r) => r.status === "IN_PROGRESS");
+  const isOwner = user && grid && user.id === grid.ownerId;
 
   return (
     <div style={{ maxWidth: 720, margin: "40px auto", padding: 24 }}>
       <Link to="/dashboard" style={{ color: "#e10600" }}>← Dashboard</Link>
-      <h2 style={{ marginTop: 16 }}>Grid Leaderboard</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+        <h2 style={{ margin: 0 }}>{grid?.name || "Grid Leaderboard"}</h2>
+        {isOwner && grid && (
+          <GridAdminMenu gridId={grid.id} gridName={grid.name} onUpdate={loadData} />
+        )}
+      </div>
 
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
@@ -62,11 +88,12 @@ export function LeaderboardPage() {
       ))}
       {upcomingRaces.map((r, index) => {
         const isNextRace = index === 0; // First upcoming race
-        const hasPrediction = myPredictions.some(p => p.raceWeekendId === r.id);
+        // Only check predictions for THIS grid
+        const hasPrediction = myPredictions.some(p => p.raceWeekendId === r.id && p.gridId === gridId);
         return (
         <div key={r.id} style={{ 
-          background: isNextRace ? "#d4edda" : "#f5f5f5", 
-          borderLeft: isNextRace ? "4px solid #28a745" : "none",
+          background: hasPrediction ? "#d4edda" : "#f5f5f5", 
+          borderLeft: hasPrediction ? "4px solid #28a745" : "none",
           padding: 12, 
           borderRadius: 6, 
           marginBottom: 8, 
@@ -75,8 +102,8 @@ export function LeaderboardPage() {
           alignItems: "center" 
         }}>
           <div>
-            <strong style={{ color: isNextRace ? "#155724" : "inherit" }}>{r.raceName}</strong>
-            <span style={{ marginLeft: 8, fontSize: 13, color: isNextRace ? "#155724" : "#666" }}>
+            <strong style={{ color: hasPrediction ? "#155724" : "inherit" }}>{r.raceName}</strong>
+            <span style={{ marginLeft: 8, fontSize: 13, color: hasPrediction ? "#155724" : "#666" }}>
               {new Date(r.raceDate).toLocaleDateString()}
             </span>
           </div>
@@ -84,7 +111,7 @@ export function LeaderboardPage() {
             to={`/grids/${gridId}/race/${r.id}/predict`}
             style={{ 
               padding: "6px 12px", 
-              background: isNextRace ? "#28a745" : "#e10600", 
+              background: hasPrediction ? "#28a745" : "#e10600", 
               color: "#fff", 
               borderRadius: 4, 
               textDecoration: "none", 

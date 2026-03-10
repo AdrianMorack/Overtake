@@ -56,6 +56,57 @@ export async function getUserGrids(userId: string) {
   return memberships.map((m: Membership) => m.grid);
 }
 
+export async function getGrid(gridId: string) {
+  const grid = await prisma.grid.findUnique({
+    where: { id: gridId },
+    include: {
+      memberships: {
+        include: {
+          user: { select: { id: true, username: true, avatarUrl: true } },
+        },
+      },
+    },
+  });
+  if (!grid) throw new Error("Grid not found");
+  return grid;
+}
+
+export async function updateGrid(gridId: string, data: { name?: string }, userId: string) {
+  const grid = await prisma.grid.findUnique({ where: { id: gridId } });
+  if (!grid) throw new Error("Grid not found");
+  if (grid.ownerId !== userId) throw new Error("Only the grid owner can update the grid");
+
+  return prisma.grid.update({
+    where: { id: gridId },
+    data,
+  });
+}
+
+export async function deleteGrid(gridId: string, userId: string) {
+  const grid = await prisma.grid.findUnique({ where: { id: gridId } });
+  if (!grid) throw new Error("Grid not found");
+  if (grid.ownerId !== userId) throw new Error("Only the grid owner can delete the grid");
+
+  // Delete all memberships and predictions first (cascading deletes handled by Prisma)
+  await prisma.grid.delete({ where: { id: gridId } });
+}
+
+export async function removeMember(gridId: string, targetUserId: string, userId: string) {
+  const grid = await prisma.grid.findUnique({ where: { id: gridId } });
+  if (!grid) throw new Error("Grid not found");
+  if (grid.ownerId !== userId) throw new Error("Only the grid owner can remove members");
+  if (grid.ownerId === targetUserId) throw new Error("Cannot remove the grid owner");
+
+  const membership = await prisma.gridMembership.findUnique({
+    where: { userId_gridId: { userId: targetUserId, gridId } },
+  });
+  if (!membership) throw new Error("User is not a member of this grid");
+
+  await prisma.gridMembership.delete({
+    where: { userId_gridId: { userId: targetUserId, gridId } },
+  });
+}
+
 export async function getGridLeaderboard(gridId: string, season?: number) {
   const memberships = await prisma.gridMembership.findMany({
     where: { gridId },

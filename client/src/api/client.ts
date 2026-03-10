@@ -120,6 +120,29 @@ class ApiClient {
     return this.request<LeaderboardEntry[]>(`/grids/${encodeURIComponent(gridId)}/leaderboard`);
   }
 
+  getGrid(gridId: string) {
+    return this.request<Grid>(`/grids/${encodeURIComponent(gridId)}`);
+  }
+
+  updateGrid(gridId: string, data: { name: string }) {
+    return this.request<Grid>(`/grids/${encodeURIComponent(gridId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteGrid(gridId: string) {
+    return this.request(`/grids/${encodeURIComponent(gridId)}`, {
+      method: "DELETE",
+    });
+  }
+
+  kickMember(gridId: string, userId: string) {
+    return this.request(`/grids/${encodeURIComponent(gridId)}/members/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
+  }
+
   // ── Races ─────────────────────────────────────────────────────────────────
   getRaceWeekends(season: number = new Date().getFullYear()) {
     return this.request<RaceWeekend[]>(`/races/weekends?season=${season}`);

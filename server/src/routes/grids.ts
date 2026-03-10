@@ -11,6 +11,10 @@ const createGridSchema = z.object({
   season: z.number().int().min(2020).max(2030).optional(),
 });
 
+const updateGridSchema = z.object({
+  name: z.string().min(2).max(50),
+});
+
 const joinGridSchema = z.object({
   code: z.string().length(6),
 });
@@ -41,9 +45,45 @@ router.get("/", async (req: Request, res: Response) => {
   res.json(grids);
 });
 
+router.get("/:gridId", async (req: Request, res: Response) => {
+  try {
+    const grid = await gridService.getGrid(req.params.gridId);
+    res.json(grid);
+  } catch (err: any) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
 router.get("/:gridId/leaderboard", async (req: Request, res: Response) => {
   const leaderboard = await gridService.getGridLeaderboard(req.params.gridId);
   res.json(leaderboard);
+});
+
+router.patch("/:gridId", validate(updateGridSchema), async (req: Request, res: Response) => {
+  try {
+    const grid = await gridService.updateGrid(req.params.gridId, req.body, req.user!.userId);
+    res.json(grid);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete("/:gridId", async (req: Request, res: Response) => {
+  try {
+    await gridService.deleteGrid(req.params.gridId, req.user!.userId);
+    res.status(204).send();
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete("/:gridId/members/:userId", async (req: Request, res: Response) => {
+  try {
+    await gridService.removeMember(req.params.gridId, req.params.userId, req.user!.userId);
+    res.status(204).send();
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 export default router;

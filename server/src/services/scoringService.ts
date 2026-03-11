@@ -15,12 +15,12 @@ interface PointBreakdown {
 /**
  * Scoring rules:
  *
- * Qualifying Top 3:  1st correct = 3pts, 2nd correct = 2pts, 3rd correct = 1pt
- * Race Top 3:        1st correct = 3pts, 2nd correct = 2pts, 3rd correct = 1pt
+ * Qualifying Top 3:  Exact position = 3pts | In podium, wrong slot = 1pt
+ * Race Top 3:        Exact position = 3pts | In podium, wrong slot = 1pt
  * Fastest Lap:       Correct = 2pts
  * Top Team:          Correct = 1pt
  *
- * Maximum per race: 3 + 2 + 1 + 3 + 2 + 1 + 2 + 1 = 15 points
+ * Maximum per race: 3×3 + 3×3 + 2 + 1 = 21 points
  */
 function calculateBreakdown(
   prediction: {
@@ -36,15 +36,25 @@ function calculateBreakdown(
 ): PointBreakdown {
   const norm = (s: string) => s.trim().toUpperCase();
 
+  const qualiPodium = [norm(result.qualiFirst), norm(result.qualiSecond), norm(result.qualiThird)];
+  const racePodium  = [norm(result.raceFirst),  norm(result.raceSecond),  norm(result.raceThird)];
+
+  const podiumScore = (predicted: string, exact: string, podium: string[]) => {
+    const n = norm(predicted);
+    if (n === norm(exact)) return 3;
+    if (podium.includes(n)) return 1;
+    return 0;
+  };
+
   return {
-    qualiFirst:  norm(prediction.qualiFirst)  === norm(result.qualiFirst) ? 3 : 0,
-    qualiSecond: norm(prediction.qualiSecond) === norm(result.qualiSecond) ? 2 : 0,
-    qualiThird:  norm(prediction.qualiThird)  === norm(result.qualiThird) ? 1 : 0,
-    raceFirst:   norm(prediction.raceFirst)   === norm(result.raceFirst) ? 3 : 0,
-    raceSecond:  norm(prediction.raceSecond)  === norm(result.raceSecond) ? 2 : 0,
-    raceThird:   norm(prediction.raceThird)   === norm(result.raceThird) ? 1 : 0,
-    fastestLap:  norm(prediction.fastestLap)  === norm(result.fastestLap) ? 2 : 0,
-    topTeam:     norm(prediction.topTeam)     === norm(result.topTeam) ? 1 : 0,
+    qualiFirst:  podiumScore(prediction.qualiFirst,  result.qualiFirst,  qualiPodium),
+    qualiSecond: podiumScore(prediction.qualiSecond, result.qualiSecond, qualiPodium),
+    qualiThird:  podiumScore(prediction.qualiThird,  result.qualiThird,  qualiPodium),
+    raceFirst:   podiumScore(prediction.raceFirst,   result.raceFirst,   racePodium),
+    raceSecond:  podiumScore(prediction.raceSecond,  result.raceSecond,  racePodium),
+    raceThird:   podiumScore(prediction.raceThird,   result.raceThird,   racePodium),
+    fastestLap:  norm(prediction.fastestLap) === norm(result.fastestLap) ? 2 : 0,
+    topTeam:     norm(prediction.topTeam)    === norm(result.topTeam)    ? 1 : 0,
   };
 }
 

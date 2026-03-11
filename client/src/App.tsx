@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { Layout } from "./components/layout/Layout";
 import { LoginPage, RegisterPage } from "./pages/AuthPages";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CreateGridPage, JoinGridPage } from "./pages/GridPages";
@@ -9,11 +10,11 @@ import { RacesPage } from "./pages/RacesPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { LiveRacePage } from "./pages/LiveRacePage";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedLayout() {
   const { user, loading } = useAuth();
-  if (loading) return <p>Loading…</p>;
-  if (!user) return <Navigate to="/login" />;
-  return <>{children}</>;
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground telemetry-text">LOADING…</p></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Layout />;
 }
 
 function AppRoutes() {
@@ -21,15 +22,17 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/grids/create" element={<ProtectedRoute><CreateGridPage /></ProtectedRoute>} />
-      <Route path="/grids/join" element={<ProtectedRoute><JoinGridPage /></ProtectedRoute>} />
-      <Route path="/grids/:gridId" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-      <Route path="/grids/:gridId/race/:raceId/predict" element={<ProtectedRoute><PredictPage /></ProtectedRoute>} />
-      <Route path="/grids/:gridId/race/:raceId/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
-      <Route path="/grids/:gridId/live/:raceWeekendId" element={<ProtectedRoute><LiveRacePage /></ProtectedRoute>} />
-      <Route path="/races" element={<ProtectedRoute><RacesPage /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route element={<ProtectedLayout />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/races" element={<RacesPage />} />
+        <Route path="/grids/create" element={<CreateGridPage />} />
+        <Route path="/grids/join" element={<JoinGridPage />} />
+        <Route path="/grids/:gridId" element={<LeaderboardPage />} />
+        <Route path="/grids/:gridId/race/:raceId/predict" element={<PredictPage />} />
+        <Route path="/grids/:gridId/race/:raceId/results" element={<ResultsPage />} />
+        <Route path="/grids/:gridId/live/:raceWeekendId" element={<LiveRacePage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

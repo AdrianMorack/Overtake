@@ -1,11 +1,41 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Save, CheckCircle2, Lock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Lock, Flag, Zap, Timer } from "lucide-react";
 import { api } from "../api/client";
 import { Driver, Team, RaceWeekend } from "../types";
 import { DriverAutocomplete } from "../components/common/DriverAutocomplete";
 import { TeamAutocomplete } from "../components/common/TeamAutocomplete";
+
+function PositionSlot({
+  pos,
+  label,
+  children,
+  accent = "primary",
+}: {
+  pos: string;
+  label: string;
+  children: React.ReactNode;
+  accent?: "primary" | "secondary";
+}) {
+  return (
+    <div className="flex items-start gap-4 py-4 border-b border-border/50 last:border-0">
+      <div
+        className={`w-10 h-10 rounded-lg flex items-center justify-center telemetry-text text-sm shrink-0 mt-1 ${
+          accent === "secondary"
+            ? "bg-theme-secondary/20 text-theme-secondary"
+            : "bg-theme-primary/20 text-theme-primary"
+        }`}
+      >
+        {pos}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted-foreground telemetry-text mb-2">{label}</p>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function PredictPage() {
   const { gridId, raceId } = useParams<{ gridId: string; raceId: string }>();
@@ -61,7 +91,9 @@ export function PredictPage() {
   const setField = (field: keyof typeof form) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  const allFilled = Object.values(form).every((v) => v.length > 0);
+  const filledCount = Object.values(form).filter((v) => v.length > 0).length;
+  const totalFields = Object.keys(form).length;
+  const allFilled = filledCount === totalFields;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,9 +120,10 @@ export function PredictPage() {
   }
 
   const locked = new Date() > new Date(race.predictionsLock);
+  const lockDate = new Date(race.predictionsLock);
 
   return (
-    <div className="container mx-auto px-4 py-6 pb-24 md:pb-6 max-w-3xl relative overflow-hidden">
+    <div className="container mx-auto px-4 py-6 pb-32 md:pb-10 max-w-2xl relative">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Link
           to={`/grids/${gridId}`}
@@ -101,131 +134,141 @@ export function PredictPage() {
         </Link>
 
         {/* Race Header */}
-        <div className="grid-panel p-6 rounded-lg mb-6">
-          <div className="text-xs text-muted-foreground telemetry-text mb-2">ROUND {race.round}</div>
-          <h1 className="text-3xl mb-2">{race.raceName}</h1>
-          <p className="text-muted-foreground">{race.circuitName}, {race.country}</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {new Date(race.raceDate).toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
+        <div className="grid-panel rounded-lg overflow-hidden mb-6 glow-primary">
+          <div className="h-[3px] theme-top-bar" />
+          <div className="p-6">
+            <div className="text-xs text-muted-foreground telemetry-text mb-1">
+              ROUND {race.round} — {race.country.toUpperCase()}
+            </div>
+            <h1 className="text-3xl mb-1">{race.raceName}</h1>
+            <p className="text-muted-foreground text-sm mb-4">{race.circuitName}</p>
+            <div className="flex flex-wrap gap-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <Flag className="w-3.5 h-3.5 text-theme-primary" />
+                <span className="text-muted-foreground telemetry-text">RACE</span>
+                <span className="telemetry-text">
+                  {new Date(race.raceDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Timer className="w-3.5 h-3.5 text-theme-secondary" />
+                <span className="text-muted-foreground telemetry-text">LOCKS</span>
+                <span className={`telemetry-text ${locked ? "text-destructive" : "text-theme-secondary"}` }>
+                  {lockDate.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {locked ? (
-          <div className="grid-panel p-6 rounded-lg flex items-center gap-4">
-            <Lock className="w-8 h-8 text-muted-foreground flex-shrink-0" />
+          <div className="grid-panel p-8 rounded-lg flex flex-col items-center text-center gap-4">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <Lock className="w-7 h-7 text-muted-foreground" />
+            </div>
             <div>
               <div className="telemetry-text text-sm mb-1">PREDICTIONS LOCKED</div>
-              <p className="text-muted-foreground text-sm">
-                The prediction window for this race has closed.
-              </p>
+              <p className="text-muted-foreground text-sm">The prediction window for this race has closed.</p>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
+
+            {/* Progress bar */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground telemetry-text">PREDICTIONS COMPLETE</span>
+                <span className="text-xs telemetry-text"
+                  style={{ color: allFilled ? "var(--theme-secondary)" : "var(--theme-primary)" }}
+                >
+                  {filledCount} / {totalFields}
+                </span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full theme-top-bar"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(filledCount / totalFields) * 100}%` }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+
             {/* Qualifying */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="grid-panel p-6 rounded-lg mb-6"
+              className="grid-panel rounded-lg overflow-hidden mb-4"
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-8 bg-theme-primary rounded-full" />
+              <div className="panel-header px-5 py-3 flex items-center gap-3">
+                <Timer className="w-4 h-4 text-theme-primary" />
                 <div>
-                  <h2 className="mb-1">Qualifying Predictions</h2>
-                  <p className="text-sm text-muted-foreground">Predict the top 3 qualifiers</p>
+                  <h2 className="text-base">Qualifying</h2>
+                  <p className="text-xs text-muted-foreground">Top 3 qualifiers</p>
                 </div>
               </div>
-              <div className="space-y-4">
-                <DriverAutocomplete
-                  drivers={drivers}
-                  value={form.qualiFirst}
-                  onChange={setField("qualiFirst")}
-                  label="P1 — POLE POSITION"
-                />
-                <DriverAutocomplete
-                  drivers={drivers}
-                  value={form.qualiSecond}
-                  onChange={setField("qualiSecond")}
-                  label="P2"
-                />
-                <DriverAutocomplete
-                  drivers={drivers}
-                  value={form.qualiThird}
-                  onChange={setField("qualiThird")}
-                  label="P3"
-                />
+              <div className="px-5">
+                <PositionSlot pos="P1" label="POLE POSITION">
+                  <DriverAutocomplete drivers={drivers} value={form.qualiFirst} onChange={setField("qualiFirst")} label="" />
+                </PositionSlot>
+                <PositionSlot pos="P2" label="SECOND ON GRID">
+                  <DriverAutocomplete drivers={drivers} value={form.qualiSecond} onChange={setField("qualiSecond")} label="" />
+                </PositionSlot>
+                <PositionSlot pos="P3" label="THIRD ON GRID">
+                  <DriverAutocomplete drivers={drivers} value={form.qualiThird} onChange={setField("qualiThird")} label="" />
+                </PositionSlot>
               </div>
             </motion.div>
 
             {/* Race */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="grid-panel p-6 rounded-lg mb-6"
+              transition={{ delay: 0.15 }}
+              className="grid-panel rounded-lg overflow-hidden mb-4"
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-8 bg-theme-secondary rounded-full" />
+              <div className="panel-header px-5 py-3 flex items-center gap-3">
+                <Flag className="w-4 h-4 text-theme-secondary" />
                 <div>
-                  <h2 className="mb-1">Race Predictions</h2>
-                  <p className="text-sm text-muted-foreground">Predict the top 3 finishers</p>
+                  <h2 className="text-base">Race</h2>
+                  <p className="text-xs text-muted-foreground">Top 3 finishers</p>
                 </div>
               </div>
-              <div className="space-y-4">
-                <DriverAutocomplete
-                  drivers={drivers}
-                  value={form.raceFirst}
-                  onChange={setField("raceFirst")}
-                  label="P1 — RACE WINNER"
-                />
-                <DriverAutocomplete
-                  drivers={drivers}
-                  value={form.raceSecond}
-                  onChange={setField("raceSecond")}
-                  label="P2"
-                />
-                <DriverAutocomplete
-                  drivers={drivers}
-                  value={form.raceThird}
-                  onChange={setField("raceThird")}
-                  label="P3"
-                />
+              <div className="px-5">
+                <PositionSlot pos="P1" label="RACE WINNER" accent="secondary">
+                  <DriverAutocomplete drivers={drivers} value={form.raceFirst} onChange={setField("raceFirst")} label="" />
+                </PositionSlot>
+                <PositionSlot pos="P2" label="SECOND PLACE" accent="secondary">
+                  <DriverAutocomplete drivers={drivers} value={form.raceSecond} onChange={setField("raceSecond")} label="" />
+                </PositionSlot>
+                <PositionSlot pos="P3" label="THIRD PLACE" accent="secondary">
+                  <DriverAutocomplete drivers={drivers} value={form.raceThird} onChange={setField("raceThird")} label="" />
+                </PositionSlot>
               </div>
             </motion.div>
 
             {/* Bonus */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="grid-panel p-6 rounded-lg mb-6"
+              transition={{ delay: 0.2 }}
+              className="grid-panel rounded-lg overflow-hidden mb-6"
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1 h-8 bg-theme-primary rounded-full" />
+              <div className="panel-header px-5 py-3 flex items-center gap-3">
+                <Zap className="w-4 h-4 text-theme-primary" />
                 <div>
-                  <h2 className="mb-1">Bonus Predictions</h2>
-                  <p className="text-sm text-muted-foreground">Extra points available</p>
+                  <h2 className="text-base">Bonus</h2>
+                  <p className="text-xs text-muted-foreground">Extra points up for grabs</p>
                 </div>
               </div>
-              <div className="space-y-4">
-                <DriverAutocomplete
-                  drivers={drivers}
-                  value={form.fastestLap}
-                  onChange={setField("fastestLap")}
-                  label="FASTEST LAP"
-                />
-                <TeamAutocomplete
-                  teams={teams}
-                  value={form.topTeam}
-                  onChange={setField("topTeam")}
-                  label="TOP TEAM"
-                />
+              <div className="px-5">
+                <PositionSlot pos="FL" label="FASTEST LAP">
+                  <DriverAutocomplete drivers={drivers} value={form.fastestLap} onChange={setField("fastestLap")} label="" />
+                </PositionSlot>
+                <PositionSlot pos="TT" label="TOP TEAM">
+                  <TeamAutocomplete teams={teams} value={form.topTeam} onChange={setField("topTeam")} label="" />
+                </PositionSlot>
               </div>
             </motion.div>
 
@@ -234,14 +277,14 @@ export function PredictPage() {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={!allFilled || loading || showSuccess}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-theme-primary hover:bg-theme-primary/90 disabled:bg-muted disabled:text-muted-foreground text-black rounded-lg transition-all glow-primary telemetry-text sticky bottom-20 md:bottom-6"
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-theme-secondary hover:bg-theme-secondary/80 disabled:bg-muted disabled:text-muted-foreground text-theme-secondary-fg rounded-lg transition-all glow-secondary telemetry-text text-base sticky bottom-20 md:bottom-6 shadow-lg"
             >
-              <Save className="w-5 h-5" />
-              {loading ? "SUBMITTING…" : isUpdate ? "UPDATE PREDICTIONS" : "SUBMIT PREDICTIONS"}
+              <CheckCircle2 className="w-5 h-5" />
+              {loading ? "SUBMITTING…" : isUpdate ? "UPDATE PREDICTIONS" : "LOCK IN PREDICTIONS"}
             </motion.button>
           </form>
         )}
@@ -254,11 +297,11 @@ export function PredictPage() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 grid-panel px-6 py-4 rounded-lg flex items-center gap-3 border-green-600 shadow-xl"
+            className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 grid-panel px-6 py-4 rounded-lg flex items-center gap-3 shadow-xl"
           >
             <CheckCircle2 className="w-5 h-5 text-green-500" />
             <span className="telemetry-text text-sm text-green-500">
-              PREDICTIONS {isUpdate ? "UPDATED" : "SUBMITTED"} SUCCESSFULLY
+              PREDICTIONS {isUpdate ? "UPDATED" : "LOCKED IN"}
             </span>
           </motion.div>
         )}

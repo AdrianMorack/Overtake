@@ -32,7 +32,7 @@ export function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl mb-2">Dashboard</h1>
-            <p className="text-muted-foreground telemetry-text">SEASON 2026 • YOUR COMMAND CENTER</p>
+            <p className="text-muted-foreground telemetry-text">2026 SEASON</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground telemetry-text">{user?.username?.toUpperCase()}</span>

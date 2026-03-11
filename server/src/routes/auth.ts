@@ -1,8 +1,18 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
+import { rateLimit } from "express-rate-limit";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
 import * as authService from "../services/authService";
+
+// Strict rate limit for auth endpoints: 10 attempts per 15 min per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts, please try again in 15 minutes." },
+});
 
 const router = Router();
 
@@ -21,7 +31,7 @@ const refreshSchema = z.object({
   refreshToken: z.string(),
 });
 
-router.post("/register", validate(registerSchema), async (req: Request, res: Response) => {
+router.post("/register", authLimiter, validate(registerSchema), async (req: Request, res: Response) => {
   try {
     const result = await authService.register(req.body.email, req.body.username, req.body.password);
     res.status(201).json(result);
@@ -30,7 +40,7 @@ router.post("/register", validate(registerSchema), async (req: Request, res: Res
   }
 });
 
-router.post("/login", validate(loginSchema), async (req: Request, res: Response) => {
+router.post("/login", authLimiter, validate(loginSchema), async (req: Request, res: Response) => {
   try {
     const result = await authService.login(req.body.email, req.body.password);
     res.json(result);
@@ -53,11 +63,13 @@ router.post("/logout", validate(refreshSchema), async (req: Request, res: Respon
   res.json({ message: "Logged out" });
 });
 
+const ALLOWED_TEAMS = ["ferrari", "mercedes", "redbull", "mclaren", "alpine", "aston-martin", "williams"];
+
 router.patch("/me", authenticate, async (req: Request, res: Response) => {
   try {
     const { favoriteTeam } = req.body;
-    if (typeof favoriteTeam !== "string") {
-      res.status(400).json({ error: "favoriteTeam is required" });
+    if (!favoriteTeam || !ALLOWED_TEAMS.includes(favoriteTeam)) {
+      res.status(400).json({ error: "Invalid favoriteTeam value" });
       return;
     }
     const result = await authService.updateProfile(req.user!.userId, favoriteTeam);

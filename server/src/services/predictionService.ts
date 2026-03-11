@@ -56,3 +56,11 @@ export async function getRacePredictions(raceWeekendId: string, gridId: string) 
     orderBy: { totalPoints: "desc" },
   });
 }
+
+export async function isGridMember(userId: string, gridId: string): Promise<boolean> {
+  const membership = await prisma.gridMembership.findUnique({
+    where: { userId_gridId: { userId, gridId } },
+    select: { userId: true },
+  });
+  return membership !== null;
+}

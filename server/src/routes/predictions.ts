@@ -45,6 +45,12 @@ router.get("/grid/:gridId", async (req: Request, res: Response) => {
 });
 
 router.get("/race/:raceWeekendId/grid/:gridId", async (req: Request, res: Response) => {
+  // Ensure the requesting user is a member of this grid
+  const isMember = await predictionService.isGridMember(req.user!.userId, req.params.gridId);
+  if (!isMember) {
+    res.status(403).json({ error: "You are not a member of this grid" });
+    return;
+  }
   const predictions = await predictionService.getRacePredictions(
     req.params.raceWeekendId,
     req.params.gridId

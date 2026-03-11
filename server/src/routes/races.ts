@@ -12,14 +12,14 @@ router.post("/admin/sync", authenticate, authorizeAdmin, async (req: Request, re
     res.status(400).json({ error: "Invalid year parameter (must be 2020-2030)" });
     return;
   }
-  try {
-    await syncSeasonData(year);
-    await syncRaceResults();
-    res.json({ message: `Sync complete for ${year}` });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    res.status(500).json({ error: msg });
-  }
+  
+  // Start sync in background and return immediately
+  syncSeasonData(year)
+    .then(() => syncRaceResults())
+    .then(() => console.log(`[Sync] Complete for ${year}`))
+    .catch((err) => console.error(`[Sync] Error:`, err));
+  
+  res.status(202).json({ message: `Sync started for ${year}` });
 });
 
 router.use(authenticate);

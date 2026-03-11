@@ -8,11 +8,15 @@ import { AuthPayload } from "../middleware/auth";
 const SALT_ROUNDS = 12;
 
 function generateAccessToken(payload: AuthPayload): string {
-  return jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtAccessExpiry });
+  return jwt.sign(payload, env.jwtSecret, { algorithm: "HS256", expiresIn: env.jwtAccessExpiry });
 }
 
 function generateRefreshToken(): string {
   return crypto.randomBytes(40).toString("hex");
+}
+
+function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
 export async function updateProfile(userId: string, favoriteTeam: string) {
@@ -29,7 +33,7 @@ export async function register(email: string, username: string, password: string
     where: { OR: [{ email }, { username }] },
   });
   if (existing) {
-    throw new Error(existing.email === email ? "Email already registered" : "Username taken");
+    throw new Error("Registration failed — email or username already in use");
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -53,8 +57,9 @@ export async function login(email: string, password: string) {
 }
 
 export async function refreshAccessToken(refreshToken: string) {
+  const tokenHash = hashToken(refreshToken);
   const stored = await prisma.refreshToken.findUnique({
-    where: { token: refreshToken },
+    where: { token: tokenHash },
     include: { user: true },
   });
 
@@ -70,17 +75,24 @@ export async function refreshAccessToken(refreshToken: string) {
 }
 
 export async function logout(refreshToken: string) {
-  await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
+  const tokenHash = hashToken(refreshToken);
+  await prisma.refreshToken.deleteMany({ where: { token: tokenHash } });
 }
 
 async function createTokens(userId: string, email: string) {
   const payload: AuthPayload = { userId, email };
   const accessToken = generateAccessToken(payload);
   const refreshTokenValue = generateRefreshToken();
+  const tokenHash = hashToken(refreshTokenValue);
+
+  // Clean up expired tokens for this user
+  await prisma.refreshToken.deleteMany({
+    where: { userId, expiresAt: { lt: new Date() } },
+  });
 
   await prisma.refreshToken.create({
     data: {
-      token: refreshTokenValue,
+      token: tokenHash,
       userId,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     },

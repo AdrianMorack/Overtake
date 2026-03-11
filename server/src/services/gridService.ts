@@ -127,6 +127,12 @@ export async function removeMember(gridId: string, targetUserId: string, userId:
   });
 }
 
+export async function getMembership(userId: string, gridId: string) {
+  return prisma.gridMembership.findUnique({
+    where: { userId_gridId: { userId, gridId } },
+  });
+}
+
 export async function getGridLeaderboard(gridId: string, season?: number) {
   const memberships = await prisma.gridMembership.findMany({
     where: { gridId, status: "ACTIVE" },

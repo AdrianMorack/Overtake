@@ -49,7 +49,7 @@ router.post("/login", authLimiter, validate(loginSchema), async (req: Request, r
   }
 });
 
-router.post("/refresh", validate(refreshSchema), async (req: Request, res: Response) => {
+router.post("/refresh", authLimiter, validate(refreshSchema), async (req: Request, res: Response) => {
   try {
     const result = await authService.refreshAccessToken(req.body.refreshToken);
     res.json(result);
@@ -58,7 +58,7 @@ router.post("/refresh", validate(refreshSchema), async (req: Request, res: Respo
   }
 });
 
-router.post("/logout", validate(refreshSchema), async (req: Request, res: Response) => {
+router.post("/logout", authenticate, validate(refreshSchema), async (req: Request, res: Response) => {
   await authService.logout(req.body.refreshToken);
   res.json({ message: "Logged out" });
 });

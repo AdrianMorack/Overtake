@@ -12,8 +12,11 @@ FROM node:20-alpine
 RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY package*.json ./
+RUN npm ci --omit=dev
+RUN npx prisma generate
+RUN adduser -D appuser && chown -R appuser:appuser /app
+USER appuser
 EXPOSE 4000
 CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]

@@ -27,11 +27,13 @@ fastf1.Cache.enable_cache(CACHE_DIR)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://server:4000").split(",")
+
 app = FastAPI(title="FastF1 Bridge")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET"],
     allow_headers=["*"],
 )
 
@@ -41,6 +43,13 @@ SESSION_TTL = 30  # seconds
 
 
 def _load(year: int, rnd: int, identifier: str):
+    # Validate ranges to prevent abuse
+    current_year = datetime.now().year
+    if year < 1950 or year > current_year + 1:
+        raise HTTPException(status_code=400, detail="Invalid year")
+    if rnd < 1 or rnd > 30:
+        raise HTTPException(status_code=400, detail="Invalid round number")
+
     key = (year, rnd, identifier)
     now = datetime.now()
     if key in _sess_cache:
@@ -54,7 +63,7 @@ def _load(year: int, rnd: int, identifier: str):
         return sess
     except Exception as e:
         logger.warning("Session %s R%s %s: %s", year, rnd, identifier, e)
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Session not found")
 
 
 # ─── Key encoding helpers ─────────────────────────────────────────────────────

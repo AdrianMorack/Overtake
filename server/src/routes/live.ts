@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import prisma from "../config/database";
-import { authenticate } from "../middleware/auth";
+import { authenticate, authorizeAdmin } from "../middleware/auth";
 import {
   startPolling,
   getSnapshot,
@@ -99,6 +99,13 @@ router.get("/:raceWeekendId", async (req: Request, res: Response) => {
 
     let livePoints = null;
     if (gridId) {
+      // Verify user is an active member of the grid
+      const membership = await prisma.gridMembership.findUnique({
+        where: { userId_gridId: { userId: req.user!.userId, gridId } },
+      });
+      if (!membership || membership.status !== "ACTIVE") {
+        return res.status(403).json({ message: "Not a member of this grid" });
+      }
       livePoints = await getLivePointsForGrid(snapshot, raceWeekendId, gridId);
     }
 
@@ -121,6 +128,16 @@ router.get("/:raceWeekendId/stream", async (req: Request, res: Response) => {
     });
     if (!raceWeekend) {
       return res.status(404).json({ message: "Race weekend not found" });
+    }
+
+    // Verify grid membership if gridId provided
+    if (gridId) {
+      const membership = await prisma.gridMembership.findUnique({
+        where: { userId_gridId: { userId: req.user!.userId, gridId } },
+      });
+      if (!membership || membership.status !== "ACTIVE") {
+        return res.status(403).json({ message: "Not a member of this grid" });
+      }
     }
 
     // Determine which session to stream
@@ -194,8 +211,8 @@ router.get("/:raceWeekendId/stream", async (req: Request, res: Response) => {
 });
 
 // ─── POST /api/live/detect ────────────────────────────────────────────────────
-// Manually trigger live session detection (admin convenience endpoint)
-router.post("/detect", async (_req: Request, res: Response) => {
+// Manually trigger live session detection (admin only)
+router.post("/detect", authorizeAdmin, async (_req: Request, res: Response) => {
   try {
     await detectAndManageLiveSessions();
     return res.json({ message: "Detection complete" });

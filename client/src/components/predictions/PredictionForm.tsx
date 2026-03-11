@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../api/client";
 import { Driver, Team } from "../../types";
 import { DriverAutocomplete } from "../common/DriverAutocomplete";

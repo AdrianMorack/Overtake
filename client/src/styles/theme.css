@@ -193,6 +193,12 @@
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
   */
 
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
   html {
     font-size: var(--font-size);
   }

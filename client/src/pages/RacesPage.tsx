@@ -18,7 +18,7 @@ function RaceCard({ race }: { race: RaceWeekend }) {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs text-muted-foreground telemetry-text">ROUND {race.round}</span>
+            <span className="text-s text-muted-foreground telemetry-text">ROUND {race.round}</span>
             {isLive && (
               <span className="text-xs text-red-500 telemetry-text border border-red-500 px-2 py-0.5 rounded">
                 ● LIVE
@@ -67,8 +67,8 @@ function RaceCard({ race }: { race: RaceWeekend }) {
                 <span>🥇 {race.results.raceFirst}</span>
                 <span>🥈 {race.results.raceSecond}</span>
                 <span>🥉 {race.results.raceThird}</span>
-                <span>⚡ FL: {race.results.fastestLap}</span>
-                <span>🏆 {race.results.topTeam}</span>
+                <span>Fastest Lap: {race.results.fastestLap}</span>
+                <span>Top Team: {race.results.topTeam}</span>
               </div>
             </div>
           )}

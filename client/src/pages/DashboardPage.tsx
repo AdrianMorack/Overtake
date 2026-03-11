@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { Plus, Trophy, Users, Flag, LogOut } from "lucide-react";
+import { Plus, Trophy, Users, Flag, LogOut, Settings, LayoutGrid } from "lucide-react";
 import { api } from "../api/client";
 import { Grid, RaceWeekend } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -225,20 +225,20 @@ export function DashboardPage() {
                 whileHover={{ scale: 1.02 }}
                 className="grid-panel p-6 rounded-lg hover:border-theme-primary transition-all cursor-pointer"
               >
-                <Trophy className="w-8 h-8 text-theme-primary mb-3" />
+                <Settings className="w-8 h-8 text-theme-primary mb-3" />
                 <h3 className="mb-2">Profile Settings</h3>
-                <p className="text-sm text-muted-foreground">Check your rankings</p>
+                <p className="text-sm text-muted-foreground">Change account settings</p>
               </motion.div>
             </Link>
           )}
-          <Link to="/grids/create">
+          <Link to="/grids">
             <motion.div
               whileHover={{ scale: 1.02 }}
               className="grid-panel p-6 rounded-lg hover:border-theme-primary transition-all cursor-pointer"
             >
-              <Users className="w-8 h-8 text-theme-primary mb-3" />
-              <h3 className="mb-2">Create Grid</h3>
-              <p className="text-sm text-muted-foreground">Start your own competition</p>
+              <LayoutGrid className="w-8 h-8 text-theme-primary mb-3" />
+              <h3 className="mb-2">View Grids</h3>
+              <p className="text-sm text-muted-foreground">Browse your existing grids</p>
             </motion.div>
           </Link>
         </div>

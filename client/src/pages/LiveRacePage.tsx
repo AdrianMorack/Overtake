@@ -8,86 +8,86 @@ import {
   WeatherSnapshot,
 } from "../hooks/useLiveRace";
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
 
-function CompoundBadge({ compound }: { compound: string | null }) {
-  const colours: Record<string, string> = {
-    SOFT: "#e8002d",
-    MEDIUM: "#ffd700",
-    HARD: "#ebebeb",
-    INTERMEDIATE: "#43b02a",
-    WET: "#0067ff",
-  };
-  if (!compound) return null;
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const sectionHeading: React.CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: 13,
+  textTransform: "uppercase",
+  letterSpacing: 1,
+  color: "#e10600",
+};
+
+const th: React.CSSProperties = {
+  padding: "6px 8px",
+  textAlign: "center",
+  fontSize: 11,
+  fontWeight: 600,
+  textTransform: "uppercase",
+};
+
+const td: React.CSSProperties = {
+  padding: "7px 8px",
+  textAlign: "center",
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function WeatherBar({ weather }: { weather: WeatherSnapshot }) {
   return (
-    <span
-      style={{
-        display: "inline-block",
-        width: 10,
-        height: 10,
-        borderRadius: "50%",
-        background: colours[compound] ?? "#999",
-        border: "1px solid rgba(0,0,0,.2)",
-        marginRight: 4,
-      }}
-      title={compound}
-    />
+    <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#ccc", flexWrap: "wrap" }}>
+      <span>Air: {weather.airTemp.toFixed(1)}°C</span>
+      <span>Track: {weather.trackTemp.toFixed(1)}°C</span>
+      <span>Humidity: {weather.humidity.toFixed(0)}%</span>
+      <span>Wind: {weather.windSpeed.toFixed(1)} m/s</span>
+      {weather.rainfall && <span style={{ color: "#4fc3f7" }}>🌧 Rain</span>}
+    </div>
   );
 }
 
 function TimingTower({ drivers }: { drivers: DriverLiveData[] }) {
+  const sorted = [...drivers].sort((a, b) => a.position - b.position);
   return (
-    <div style={{ flex: "0 0 auto", minWidth: 360 }}>
+    <div style={{ flex: "1 1 340px", background: "#111", borderRadius: 8, overflow: "hidden" }}>
       <h3 style={sectionHeading}>Timing Tower</h3>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ borderBottom: "2px solid #e10600", color: "#888" }}>
-            <th style={th}>P</th>
+          <tr style={{ borderBottom: "1px solid #333" }}>
+            <th style={th}>POS</th>
             <th style={{ ...th, textAlign: "left" }}>Driver</th>
             <th style={th}>Gap</th>
-            <th style={{ ...th, minWidth: 70 }}>Last Lap</th>
-            <th style={th}>Pit</th>
+            <th style={th}>Interval</th>
+            <th style={th}>Last Lap</th>
+            <th style={th}>Tyre</th>
+            <th style={th}>Pits</th>
           </tr>
         </thead>
         <tbody>
-          {drivers.map((d) => (
-            <tr
-              key={d.number}
-              style={{
-                borderBottom: "1px solid #222",
-                background: d.isFastest ? "rgba(167,0,255,.08)" : "transparent",
-              }}
-            >
-              <td style={{ ...td, fontWeight: 700, color: "#e10600" }}>{d.position}</td>
+          {sorted.map((d) => (
+            <tr key={d.number} style={{ borderBottom: "1px solid #1a1a1a" }}>
+              <td style={td}>{d.position}</td>
               <td style={{ ...td, textAlign: "left" }}>
                 <span
                   style={{
                     display: "inline-block",
                     width: 3,
-                    height: 16,
-                    background: d.teamColor ?? "#555",
+                    height: 14,
+                    background: d.teamColor ?? "#888",
                     borderRadius: 2,
-                    marginRight: 8,
+                    marginRight: 6,
                     verticalAlign: "middle",
                   }}
                 />
-                <span style={{ fontWeight: 600 }}>{d.code}</span>
-                <span style={{ color: "#888", marginLeft: 6, fontSize: 11 }}>{d.teamName}</span>
+                <span style={{ color: d.isFastest ? "#a700ff" : undefined }}>{d.code}</span>
               </td>
-              <td style={{ ...td, fontFamily: "monospace" }}>
-                {d.gap || "—"}
+              <td style={td}>{d.gap}</td>
+              <td style={td}>{d.interval}</td>
+              <td style={{ ...td, color: d.isFastest ? "#a700ff" : undefined }}>
+                {d.lastLapTime ?? "—"}
               </td>
-              <td style={{ ...td, fontFamily: "monospace" }}>
-                <CompoundBadge compound={d.compound} />
-                {d.isFastest ? (
-                  <span style={{ color: "#a700ff", fontWeight: 700 }}>
-                    {d.fastestLapTime ?? d.lastLapTime ?? "—"}
-                  </span>
-                ) : (
-                  d.lastLapTime ?? "—"
-                )}
-              </td>
-              <td style={td}>{d.pitStops > 0 ? `×${d.pitStops}` : "—"}</td>
+              <td style={td}>{d.compound ?? "—"}</td>
+              <td style={td}>{d.pitStops}</td>
             </tr>
           ))}
         </tbody>
@@ -96,139 +96,93 @@ function TimingTower({ drivers }: { drivers: DriverLiveData[] }) {
   );
 }
 
-function LivePointsTable({
-  points,
-  maxPoints,
-}: {
-  points: UserLivePoints[];
-  maxPoints: number;
-}) {
+function LivePointsTable({ points, maxPoints }: { points: UserLivePoints[]; maxPoints: number }) {
   const sorted = [...points].sort((a, b) => b.livePoints - a.livePoints);
   return (
-    <div style={{ flex: "1 1 260px", minWidth: 240 }}>
+    <div style={{ flex: "1 1 260px", background: "#111", borderRadius: 8, overflow: "hidden" }}>
       <h3 style={sectionHeading}>Live Points</h3>
-      {sorted.length === 0 ? (
-        <p style={{ color: "#888", fontSize: 13 }}>No predictions found for this grid.</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {sorted.map((entry, i) => (
-            <div
-              key={entry.userId}
-              style={{
-                background: "#111",
-                borderRadius: 6,
-                padding: "8px 12px",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <span style={{ width: 20, color: "#888", fontSize: 12 }}>{i + 1}</span>
-              <span style={{ flex: 1, fontWeight: 600, fontSize: 13 }}>{entry.username}</span>
-              <span
-                style={{ fontWeight: 700, fontSize: 15, color: "#e10600", minWidth: 30, textAlign: "right" }}
-              >
-                {entry.livePoints}
-              </span>
-              {/* Progress bar */}
-              <div
-                style={{
-                  width: 60,
-                  height: 6,
-                  background: "#333",
-                  borderRadius: 3,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    height: "100%",
-                    background: "#e10600",
-                    width: maxPoints > 0 ? `${(entry.livePoints / maxPoints) * 100}%` : "0%",
-                    borderRadius: 3,
-                    transition: "width .4s ease",
-                  }}
-                />
-              </div>
-            </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid #333" }}>
+            <th style={th}>#</th>
+            <th style={{ ...th, textAlign: "left" }}>User</th>
+            <th style={th}>Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((p, i) => (
+            <tr key={p.userId} style={{ borderBottom: "1px solid #1a1a1a" }}>
+              <td style={td}>{i + 1}</td>
+              <td style={{ ...td, textAlign: "left" }}>{p.username}</td>
+              <td style={td}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div
+                    style={{
+                      height: 6,
+                      width: Math.max(4, (p.livePoints / maxPoints) * 80),
+                      background: "#e10600",
+                      borderRadius: 3,
+                    }}
+                  />
+                  {p.livePoints}
+                </div>
+              </td>
+            </tr>
           ))}
-        </div>
-      )}
+        </tbody>
+      </table>
     </div>
   );
 }
 
 function RaceControlFeed({ messages }: { messages: RaceControlMsg[] }) {
-  const flagColor: Record<string, string> = {
-    GREEN: "#43b02a",
-    YELLOW: "#ffd700",
-    "DOUBLE YELLOW": "#ffa500",
+  const flagColors: Record<string, string> = {
+    GREEN: "#00c853",
+    YELLOW: "#ffd600",
     RED: "#e10600",
+    SC: "#ff9800",
+    VSC: "#ff9800",
+    BLUE: "#2979ff",
     CHEQUERED: "#fff",
-    BLUE: "#0067ff",
-    SC: "#ffa500",
-    VSC: "#ffa500",
   };
-
   return (
-    <div>
+    <div style={{ background: "#111", borderRadius: 8, padding: "12px 16px" }}>
       <h3 style={sectionHeading}>Race Control</h3>
-      <div
-        style={{
-          maxHeight: 160,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-        }}
-      >
-        {messages.length === 0 ? (
-          <p style={{ color: "#888", fontSize: 13 }}>No messages yet.</p>
-        ) : (
-          messages.map((msg, i) => (
-            <div
-              key={i}
-              style={{
-                background: "#111",
-                borderRadius: 4,
-                padding: "5px 10px",
-                fontSize: 12,
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-              }}
-            >
-              <span style={{ color: "#555", fontFamily: "monospace", flexShrink: 0 }}>
-                {new Date(msg.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+      {messages.length === 0 && <p style={{ color: "#555", fontSize: 12 }}>No messages yet.</p>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {[...messages].reverse().map((m, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: 12,
+              padding: "6px 10px",
+              borderRadius: 4,
+              background: "#1a1a1a",
+              borderLeft: `3px solid ${m.flag ? (flagColors[m.flag] ?? "#555") : "#555"}`,
+            }}
+          >
+            <span style={{ color: "#666", marginRight: 8 }}>
+              {new Date(m.date).toLocaleTimeString()}
+            </span>
+            {m.flag && (
+              <span
+                style={{
+                  marginRight: 8,
+                  padding: "1px 6px",
+                  borderRadius: 3,
+                  background: flagColors[m.flag] ?? "#555",
+                  color: "#000",
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                {m.flag}
               </span>
-              {msg.flag && (
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: flagColor[msg.flag] ?? "#888",
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-              <span style={{ color: "#ddd" }}>{msg.message}</span>
-            </div>
-          ))
-        )}
+            )}
+            {m.message}
+          </div>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function WeatherBar({ weather }: { weather: WeatherSnapshot }) {
-  return (
-    <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#aaa", flexWrap: "wrap" }}>
-      <span>🌡 Track {weather.trackTemp}°C</span>
-      <span>💨 Air {weather.airTemp}°C</span>
-      <span>💧 Humidity {weather.humidity}%</span>
-      <span>🌬 Wind {weather.windSpeed} m/s</span>
-      {weather.rainfall && <span style={{ color: "#0af" }}>🌧 Rain</span>}
     </div>
   );
 }
@@ -356,25 +310,4 @@ export function LiveRacePage() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
-const sectionHeading: React.CSSProperties = {
-  margin: "0 0 10px",
-  fontSize: 13,
-  textTransform: "uppercase",
-  letterSpacing: 1,
-  color: "#e10600",
-};
-
-const th: React.CSSProperties = {
-  padding: "6px 8px",
-  textAlign: "center",
-  fontSize: 11,
-  fontWeight: 600,
-  textTransform: "uppercase",
-};
-
-const td: React.CSSProperties = {
-  padding: "7px 8px",
-  textAlign: "center",
-};

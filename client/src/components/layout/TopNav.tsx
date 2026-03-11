@@ -16,7 +16,8 @@ export function TopNav() {
   ];
 
   return (
-    <nav className="hidden md:block border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+    <nav className="hidden md:block bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+      <div className="h-[3px] theme-top-bar" />
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/dashboard" className="flex items-center gap-3">
@@ -57,6 +58,7 @@ export function TopNav() {
           </div>
         </div>
       </div>
+      <div className="h-px bg-border" />
     </nav>
   );
 }

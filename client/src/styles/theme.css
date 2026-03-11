@@ -82,6 +82,7 @@
   --theme-secondary: #fff100;
   --theme-primary-rgb: 220, 0, 0;
   --theme-secondary-rgb: 255, 241, 0;
+  --theme-secondary-fg: #000000;
 }
 
 /* F1 Team Themes */
@@ -90,6 +91,7 @@
   --theme-secondary: #fff100;
   --theme-primary-rgb: 220, 0, 0;
   --theme-secondary-rgb: 255, 241, 0;
+  --theme-secondary-fg: #000000;
 }
 
 .dark[data-team="mercedes"] {
@@ -97,6 +99,7 @@
   --theme-secondary: #c0c0c0;
   --theme-primary-rgb: 0, 210, 190;
   --theme-secondary-rgb: 192, 192, 192;
+  --theme-secondary-fg: #000000;
 }
 
 .dark[data-team="redbull"] {
@@ -104,6 +107,7 @@
   --theme-secondary: #dc0000;
   --theme-primary-rgb: 6, 0, 239;
   --theme-secondary-rgb: 220, 0, 0;
+  --theme-secondary-fg: #ffffff;
 }
 
 .dark[data-team="mclaren"] {
@@ -111,6 +115,7 @@
   --theme-secondary: #0090ff;
   --theme-primary-rgb: 255, 135, 0;
   --theme-secondary-rgb: 0, 144, 255;
+  --theme-secondary-fg: #ffffff;
 }
 
 .dark[data-team="alpine"] {
@@ -118,6 +123,7 @@
   --theme-secondary: #ff87bc;
   --theme-primary-rgb: 0, 144, 255;
   --theme-secondary-rgb: 255, 135, 188;
+  --theme-secondary-fg: #000000;
 }
 
 .dark[data-team="aston-martin"] {
@@ -125,6 +131,7 @@
   --theme-secondary: #00f5d4;
   --theme-primary-rgb: 0, 111, 98;
   --theme-secondary-rgb: 0, 245, 212;
+  --theme-secondary-fg: #000000;
 }
 
 .dark[data-team="williams"] {
@@ -132,6 +139,7 @@
   --theme-secondary: #00a0de;
   --theme-primary-rgb: 0, 90, 255;
   --theme-secondary-rgb: 0, 160, 222;
+  --theme-secondary-fg: #ffffff;
 }
 
 @theme inline {
@@ -177,6 +185,7 @@
   /* Theme colors */
   --color-theme-primary: var(--theme-primary);
   --color-theme-secondary: var(--theme-secondary);
+  --color-theme-secondary-fg: var(--theme-secondary-fg);
 }
 
 @layer base {
@@ -249,8 +258,17 @@
 /* Custom motorsport styles */
 @layer utilities {
   .grid-panel {
-    border: 1px solid var(--border);
-    background: var(--card);
+    border: 1px solid rgba(var(--theme-primary-rgb), 0.18);
+    background: linear-gradient(150deg, rgba(var(--theme-primary-rgb), 0.07) 0%, var(--card) 55%);
+  }
+
+  .panel-header {
+    background: rgba(var(--theme-primary-rgb), 0.1);
+    border-bottom: 1px solid rgba(var(--theme-primary-rgb), 0.2);
+  }
+
+  .text-theme-secondary-fg {
+    color: var(--theme-secondary-fg);
   }
 
   .telemetry-text {
@@ -262,12 +280,27 @@
     color: var(--theme-primary);
   }
 
+  .theme-top-bar {
+    background: linear-gradient(90deg, var(--theme-primary) 0%, var(--theme-secondary) 50%, var(--theme-primary) 100%);
+  }
+
+  .theme-gradient-bg {
+    background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.08) 0%, transparent 55%, rgba(var(--theme-secondary-rgb), 0.04) 100%);
+  }
+
+  .text-theme-gradient {
+    background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   .glow-primary {
-    box-shadow: 0 0 20px rgba(var(--theme-primary-rgb), 0.3);
+    box-shadow: 0 0 24px rgba(var(--theme-primary-rgb), 0.25), 0 0 1px rgba(var(--theme-primary-rgb), 0.4);
   }
 
   .glow-secondary {
-    box-shadow: 0 0 20px rgba(var(--theme-secondary-rgb), 0.3);
+    box-shadow: 0 0 24px rgba(var(--theme-secondary-rgb), 0.2);
   }
 
   .border-theme-primary {

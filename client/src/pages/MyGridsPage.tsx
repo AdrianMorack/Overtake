@@ -42,7 +42,7 @@ export function MyGridsPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-4 py-2 bg-theme-primary hover:bg-theme-primary/90 text-black rounded-lg transition-colors text-sm telemetry-text glow-primary"
+                className="flex items-center gap-2 px-4 py-2 bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg transition-colors text-sm telemetry-text glow-secondary"
               >
                 <Plus className="w-4 h-4" />
                 CREATE
@@ -70,7 +70,7 @@ export function MyGridsPage() {
                 </button>
               </Link>
               <Link to="/grids/create">
-                <button className="px-4 py-2 bg-theme-primary text-black hover:bg-theme-primary/90 rounded-lg text-sm telemetry-text glow-primary transition-colors">
+                <button className="px-4 py-2 bg-theme-secondary text-theme-secondary-fg hover:bg-theme-secondary/80 rounded-lg text-sm telemetry-text glow-secondary transition-colors">
                   CREATE GRID
                 </button>
               </Link>

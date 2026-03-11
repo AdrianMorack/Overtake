@@ -61,7 +61,7 @@ export function ProfilePage() {
           transition={{ delay: 0.1 }}
           className="grid-panel rounded-lg overflow-hidden mb-6"
         >
-          <div className="p-4 border-b border-border bg-muted/30">
+          <div className="p-4 panel-header">
             <div className="flex items-center gap-3">
               <Palette className="w-5 h-5 text-theme-primary" />
               <div>
@@ -121,7 +121,7 @@ export function ProfilePage() {
           transition={{ delay: 0.2 }}
           className="grid-panel rounded-lg overflow-hidden"
         >
-          <div className="p-4 border-b border-border bg-muted/30">
+          <div className="p-4 panel-header">
             <h2>Account</h2>
           </div>
           <div className="p-4">

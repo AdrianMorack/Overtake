@@ -78,7 +78,7 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
               transition={{ duration: 0.15 }}
               className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-50"
             >
-              <div className="px-3 py-2 border-b border-border">
+              <div className="px-3 py-2 panel-header">
                 <p className="text-xs text-muted-foreground telemetry-text">GRID SETTINGS</p>
               </div>
               <button
@@ -145,7 +145,7 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
                 whileTap={{ scale: 0.98 }}
                 onClick={handleRename}
                 disabled={loading || !newName.trim()}
-                className="px-4 py-2 text-sm bg-theme-primary hover:bg-theme-primary/90 text-black rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed telemetry-text"
+                className="px-4 py-2 text-sm bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed telemetry-text"
               >
                 {loading ? "SAVING…" : "SAVE"}
               </motion.button>

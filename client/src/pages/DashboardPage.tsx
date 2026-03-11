@@ -54,19 +54,20 @@ export function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="mb-6 p-6 bg-gradient-to-r from-red-600/20 to-red-600/5 border border-red-600 rounded-lg glow-primary"
+          className="mb-6 p-6 theme-gradient-bg border border-theme-primary rounded-lg glow-primary"
         >
+          <div className="h-[3px] theme-top-bar rounded-full mb-4" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shrink-0"
+                className="w-12 h-12 bg-theme-primary rounded-full flex items-center justify-center shrink-0"
               >
-                <Flag className="w-6 h-6 text-white" />
+                <Flag className="w-6 h-6 text-black" />
               </motion.div>
               <div>
-                <div className="text-xs text-red-500 telemetry-text mb-1">LIVE NOW</div>
+                <div className="text-xs text-theme-secondary telemetry-text mb-1">LIVE NOW</div>
                 <h3 className="mb-1">{liveRace.raceName}</h3>
                 <p className="text-sm text-muted-foreground">{liveRace.circuitName}, {liveRace.country}</p>
               </div>
@@ -76,7 +77,7 @@ export function DashboardPage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg telemetry-text transition-colors"
+                  className="px-6 py-3 bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg telemetry-text transition-colors"
                 >
                   WATCH LIVE
                 </motion.button>
@@ -102,7 +103,7 @@ export function DashboardPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-theme-primary hover:bg-theme-primary/90 text-black rounded-lg telemetry-text text-sm transition-colors"
+                className="px-4 py-2 bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg telemetry-text text-sm transition-colors"
               >
                 FULL CALENDAR
               </motion.button>
@@ -157,7 +158,7 @@ export function DashboardPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-4 py-2 bg-theme-primary hover:bg-theme-primary/90 text-black rounded-lg telemetry-text text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg telemetry-text text-sm transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 CREATE

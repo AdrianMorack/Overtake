@@ -63,7 +63,7 @@ router.post("/logout", validate(refreshSchema), async (req: Request, res: Respon
   res.json({ message: "Logged out" });
 });
 
-const ALLOWED_TEAMS = ["ferrari", "mercedes", "redbull", "mclaren", "alpine", "aston-martin", "williams"];
+const ALLOWED_TEAMS = ["ferrari", "mercedes", "redbull", "mclaren", "alpine", "astonmartin", "williams", "haas", "racingbulls", "cadillac", "audi"];
 
 router.patch("/me", authenticate, async (req: Request, res: Response) => {
   try {

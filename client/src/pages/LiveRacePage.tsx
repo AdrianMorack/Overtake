@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, hasWarned } from "motion/react";
 import {
   useLiveRace,
   DriverLiveData,
@@ -8,6 +8,48 @@ import {
   WeatherSnapshot,
 } from "../hooks/useLiveRace";
 
+
+// ─── Team Colours ───────────────────────────────────────────────────────────────
+export const TEAM_COLORS: Record<string, { primary: string; secondary: string }> = {
+  ferrari:        { primary: "#f70d1a", secondary: "#ffffff" },
+  mercedes:       { primary: "#00d2be", secondary: "#505050" },
+  redbull:        { primary: "#0A0E75", secondary: "#D81F26" },
+  mclaren:        { primary: "#DC6D22", secondary: "#050505" },
+  alpine:         { primary: "#176FB5", secondary: "#ED79B6" },
+  astonmartin:    { primary: "#15674C", secondary: "#262626" },
+  williams:       { primary: "#0B2BE5", secondary: "#B0B0B0" },
+  haas:           { primary: "#DEDEDE", secondary: "#E11412" },
+  racingbulls:    { primary: "#D4D7D5", secondary: "#2459B3" },
+  cadillac:       { primary: "#B3B3B3", secondary: "#52514F" },
+  audi:           { primary: "#D4D0CF", secondary: "#F82724" },
+};
+
+function hexToRgb(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
+function getContrastFg(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const toLinear = (c: number) => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.179 ? "#000000" : "#ffffff";
+}
+
+export function applyTeamTheme(teamId: string): void {
+  const colors = TEAM_COLORS[teamId] ?? TEAM_COLORS.ferrari;
+  document.body.setAttribute("data-team", teamId);
+  const root = document.documentElement;
+  root.style.setProperty("--theme-primary", colors.primary);
+  root.style.setProperty("--theme-secondary", colors.secondary);
+  root.style.setProperty("--theme-primary-rgb", hexToRgb(colors.primary));
+  root.style.setProperty("--theme-secondary-rgb", hexToRgb(colors.secondary));
+  root.style.setProperty("--theme-secondary-fg", getContrastFg(colors.secondary));
+}
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -41,7 +83,7 @@ function WeatherBar({ weather }: { weather: WeatherSnapshot }) {
       <span>Track: {weather.trackTemp.toFixed(1)}°C</span>
       <span>Humidity: {weather.humidity.toFixed(0)}%</span>
       <span>Wind: {weather.windSpeed.toFixed(1)} m/s</span>
-      {weather.rainfall && <span style={{ color: "#4fc3f7" }}>🌧 Rain</span>}
+      {weather.rainfall && <span style={{ color: "#4fc3f7" }}>Rain</span>}
     </div>
   );
 }
@@ -97,16 +139,6 @@ function TimingTower({ drivers }: { drivers: DriverLiveData[] }) {
 }
 
 function LivePointsCards({ points, maxPoints }: { points: UserLivePoints[]; maxPoints: number }) {
-  const TEAM_COLORS: Record<string, { primary: string; secondary: string }> = {
-    ferrari:        { primary: "#dc0000", secondary: "#fff100" },
-    mercedes:       { primary: "#00d2be", secondary: "#c0c0c0" },
-    redbull:        { primary: "#0600ef", secondary: "#dc0000" },
-    mclaren:        { primary: "#ff8700", secondary: "#0090ff" },
-    alpine:         { primary: "#0090ff", secondary: "#ff87bc" },
-    "aston-martin": { primary: "#006f62", secondary: "#00f5d4" },
-    williams:       { primary: "#005aff", secondary: "#00a0de" },
-  };
-
   const sorted = [...points].sort((a, b) => b.livePoints - a.livePoints);
 
   return (

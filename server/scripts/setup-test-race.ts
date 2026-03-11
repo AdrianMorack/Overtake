@@ -23,6 +23,22 @@ async function main() {
   const args     = process.argv.slice(2);
   const gridIdx  = args.indexOf("--grid");
   const gridId   = gridIdx !== -1 ? args[gridIdx + 1] : undefined;
+  const reset    = args.includes("--reset");
+
+  // ─── --reset: mark the test race as UPCOMING so it stops being polled ────
+  if (reset) {
+    const updated = await prisma.raceWeekend.updateMany({
+      where:  { externalId: SESSION_KEY },
+      data:   { status: "UPCOMING", raceDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+    });
+    if (updated.count > 0) {
+      console.log("\n  ✅  Test race reset to UPCOMING — live polling will stop.\n");
+    } else {
+      console.log("\n  ℹ️   No test race found to reset.\n");
+    }
+    await prisma.$disconnect();
+    return;
+  }
 
   // ─── 1. Upsert the test race weekend ──────────────────────────────────────
   const now       = new Date();

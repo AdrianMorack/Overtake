@@ -78,68 +78,100 @@
   --sidebar-ring: oklch(0.439 0 0);
 
   /* F1 Team Theme Variables - Default Ferrari */
-  --theme-primary: #dc0000;
-  --theme-secondary: #fff100;
-  --theme-primary-rgb: 220, 0, 0;
-  --theme-secondary-rgb: 255, 241, 0;
+  --theme-primary: #f70d1a;
+  --theme-secondary: #ffffff;
+  --theme-primary-rgb: 247, 13, 26;
+  --theme-secondary-rgb: 255, 255, 255;
   --theme-secondary-fg: #000000;
 }
 
-/* F1 Team Themes */
+/* F1 Team Themes — kept in sync with TEAM_COLORS in LiveRacePage.tsx */
 .dark[data-team="ferrari"] {
-  --theme-primary: #dc0000;
-  --theme-secondary: #fff100;
-  --theme-primary-rgb: 220, 0, 0;
-  --theme-secondary-rgb: 255, 241, 0;
+  --theme-primary: #f70d1a;
+  --theme-secondary: #ffffff;
+  --theme-primary-rgb: 247, 13, 26;
+  --theme-secondary-rgb: 255, 255, 255;
   --theme-secondary-fg: #000000;
 }
 
 .dark[data-team="mercedes"] {
   --theme-primary: #00d2be;
-  --theme-secondary: #c0c0c0;
+  --theme-secondary: #505050;
   --theme-primary-rgb: 0, 210, 190;
-  --theme-secondary-rgb: 192, 192, 192;
-  --theme-secondary-fg: #000000;
+  --theme-secondary-rgb: 80, 80, 80;
+  --theme-secondary-fg: #ffffff;
 }
 
 .dark[data-team="redbull"] {
-  --theme-primary: #0600ef;
-  --theme-secondary: #dc0000;
-  --theme-primary-rgb: 6, 0, 239;
-  --theme-secondary-rgb: 220, 0, 0;
+  --theme-primary: #0A0E75;
+  --theme-secondary: #D81F26;
+  --theme-primary-rgb: 10, 14, 117;
+  --theme-secondary-rgb: 216, 31, 38;
   --theme-secondary-fg: #ffffff;
 }
 
 .dark[data-team="mclaren"] {
-  --theme-primary: #ff8700;
-  --theme-secondary: #0090ff;
-  --theme-primary-rgb: 255, 135, 0;
-  --theme-secondary-rgb: 0, 144, 255;
+  --theme-primary: #DC6D22;
+  --theme-secondary: #050505;
+  --theme-primary-rgb: 220, 109, 34;
+  --theme-secondary-rgb: 5, 5, 5;
   --theme-secondary-fg: #ffffff;
 }
 
 .dark[data-team="alpine"] {
-  --theme-primary: #0090ff;
-  --theme-secondary: #ff87bc;
-  --theme-primary-rgb: 0, 144, 255;
-  --theme-secondary-rgb: 255, 135, 188;
+  --theme-primary: #176FB5;
+  --theme-secondary: #ED79B6;
+  --theme-primary-rgb: 23, 111, 181;
+  --theme-secondary-rgb: 237, 121, 182;
   --theme-secondary-fg: #000000;
 }
 
-.dark[data-team="aston-martin"] {
-  --theme-primary: #006f62;
-  --theme-secondary: #00f5d4;
-  --theme-primary-rgb: 0, 111, 98;
-  --theme-secondary-rgb: 0, 245, 212;
-  --theme-secondary-fg: #000000;
+.dark[data-team="astonmartin"] {
+  --theme-primary: #15674C;
+  --theme-secondary: #262626;
+  --theme-primary-rgb: 21, 103, 76;
+  --theme-secondary-rgb: 38, 38, 38;
+  --theme-secondary-fg: #ffffff;
 }
 
 .dark[data-team="williams"] {
-  --theme-primary: #005aff;
-  --theme-secondary: #00a0de;
-  --theme-primary-rgb: 0, 90, 255;
-  --theme-secondary-rgb: 0, 160, 222;
+  --theme-primary: #0B2BE5;
+  --theme-secondary: #B0B0B0;
+  --theme-primary-rgb: 11, 43, 229;
+  --theme-secondary-rgb: 176, 176, 176;
+  --theme-secondary-fg: #000000;
+}
+
+.dark[data-team="haas"] {
+  --theme-primary: #DEDEDE;
+  --theme-secondary: #E11412;
+  --theme-primary-rgb: 222, 222, 222;
+  --theme-secondary-rgb: 225, 20, 18;
   --theme-secondary-fg: #ffffff;
+}
+
+.dark[data-team="racingbulls"] {
+  --theme-primary: #D4D7D5;
+  --theme-secondary: #2459B3;
+  --theme-primary-rgb: 212, 215, 213;
+  --theme-secondary-rgb: 36, 89, 179;
+  --theme-secondary-fg: #ffffff;
+}
+
+.dark[data-team="cadillac"] {
+  --theme-primary: #B3B3B3;
+  --theme-secondary: #52514F;
+  --theme-primary-rgb: 179, 179, 179;
+  --theme-secondary-rgb: 82, 81, 79;
+  --theme-secondary-fg: #ffffff;
+}
+
+.dark[data-team="audi"] {
+  --theme-primary: #D4D0CF;
+  --theme-secondary: #F82724;
+  --theme-primary-rgb: 212, 208, 207;
+  --theme-secondary-rgb: 248, 39, 36;
+  --theme-secondary-fg: #000000;
 }
 
 @theme inline {

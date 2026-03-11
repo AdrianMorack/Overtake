@@ -10,7 +10,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { PredictPage } from "./pages/PredictPage";
 import { RacesPage } from "./pages/RacesPage";
 import { ResultsPage } from "./pages/ResultsPage";
-import { LiveRacePage } from "./pages/LiveRacePage";
+import { LiveRacePage, applyTeamTheme } from "./pages/LiveRacePage";
 import { ProfilePage } from "./pages/ProfilePage";
 
 function ProtectedLayout() {
@@ -47,7 +47,7 @@ function ThemeInit() {
   useEffect(() => {
     const key = user ? `favoriteTeam:${user.id}` : "favoriteTeam";
     const team = localStorage.getItem(key) ?? "ferrari";
-    document.body.setAttribute("data-team", team);
+    applyTeamTheme(team);
   }, [user?.id]);
   return null;
 }

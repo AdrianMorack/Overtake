@@ -4,15 +4,20 @@ import { motion } from "motion/react";
 import { Palette, LogOut, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../api/client";
+import { TEAM_COLORS, applyTeamTheme } from "./LiveRacePage";
 
 const TEAMS = [
-  { id: "ferrari", name: "Ferrari", primary: "#dc0000", secondary: "#fff100" },
-  { id: "mercedes", name: "Mercedes", primary: "#00d2be", secondary: "#c0c0c0" },
-  { id: "redbull", name: "Red Bull", primary: "#0600ef", secondary: "#dc0000" },
-  { id: "mclaren", name: "McLaren", primary: "#ff8700", secondary: "#0090ff" },
-  { id: "alpine", name: "Alpine", primary: "#0090ff", secondary: "#ff87bc" },
-  { id: "aston-martin", name: "Aston Martin", primary: "#006f62", secondary: "#00f5d4" },
-  { id: "williams", name: "Williams", primary: "#005aff", secondary: "#00a0de" },
+  { id: "ferrari", name: "Ferrari", primary: TEAM_COLORS.ferrari.primary, secondary: TEAM_COLORS.ferrari.secondary },
+  { id: "mercedes", name: "Mercedes", primary: TEAM_COLORS.mercedes.primary, secondary: TEAM_COLORS.mercedes.secondary },
+  { id: "redbull", name: "Red Bull", primary: TEAM_COLORS.redbull.primary, secondary: TEAM_COLORS.redbull.secondary },
+  { id: "mclaren", name: "McLaren", primary: TEAM_COLORS.mclaren.primary, secondary: TEAM_COLORS.mclaren.secondary },
+  { id: "alpine", name: "Alpine", primary: TEAM_COLORS.alpine.primary, secondary: TEAM_COLORS.alpine.secondary },
+  { id: "astonmartin", name: "Aston Martin", primary: TEAM_COLORS.astonmartin.primary, secondary: TEAM_COLORS.astonmartin.secondary },
+  { id: "williams", name: "Williams", primary: TEAM_COLORS.williams.primary, secondary: TEAM_COLORS.williams.secondary },
+  { id: "haas", name: "Haas", primary: TEAM_COLORS.haas.primary, secondary: TEAM_COLORS.haas.secondary },
+  { id: "racingbulls", name: "Racing Bulls", primary: TEAM_COLORS.racingbulls.primary, secondary: TEAM_COLORS.racingbulls.secondary },
+  { id: "cadillac", name: "Cadillac", primary: TEAM_COLORS.cadillac.primary, secondary: TEAM_COLORS.cadillac.secondary },
+  { id: "audi", name: "Audi", primary: TEAM_COLORS.audi.primary, secondary: TEAM_COLORS.audi.secondary },
 ];
 
 export function ProfilePage() {
@@ -27,7 +32,7 @@ export function ProfilePage() {
     setSelectedTeam(teamId);
     const key = user ? `favoriteTeam:${user.id}` : "favoriteTeam";
     localStorage.setItem(key, teamId);
-    document.body.setAttribute("data-team", teamId);
+    applyTeamTheme(teamId);
     api.updateProfile({ favoriteTeam: teamId }).catch(() => {});
   };
 

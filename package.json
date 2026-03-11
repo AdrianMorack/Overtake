@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others --kill-others-on-fail --names \"fastf1,server,client\" --prefix-colors \"yellow,red,cyan\" \"/Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m uvicorn fastf1-service.main:app --host 0.0.0.0 --port 8100 --reload\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:mock": "concurrently --kill-others --kill-others-on-fail --names \"mock-f1,server,client\" --prefix-colors \"magenta,red,cyan\" \"npx tsx server/scripts/mock-fastf1.ts\" \"FASTF1_BASE_URL=http://localhost:8199 npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "build:server": "npm run build --prefix server",
     "build:client": "npm run build --prefix client",
     "install:all": "npm install --prefix server && npm install --prefix client"

@@ -260,17 +260,29 @@ async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
 
 // ─── Polling control ─────────────────────────────────────────────────────────
 
+const failureCounts = new Map<number, number>();
+const MAX_CONSECUTIVE_FAILURES = 5; // stop polling after 5 consecutive errors
+
 export async function startPolling(sessionKey: number, intervalMs = 5_000) {
   if (pollers.has(sessionKey)) return;
   console.log(`[Live] Polling started for session ${sessionKey}`);
+  failureCounts.set(sessionKey, 0);
 
   const tick = async () => {
     try {
       const snap = await buildSnapshot(sessionKey);
+      failureCounts.set(sessionKey, 0); // reset on success
       snapshots.set(sessionKey, snap);
       liveEmitter.emit(`update:${sessionKey}`, snap);
     } catch (err) {
-      console.error(`[Live] Poll error session ${sessionKey}:`, err);
+      const failures = (failureCounts.get(sessionKey) ?? 0) + 1;
+      failureCounts.set(sessionKey, failures);
+      if (failures >= MAX_CONSECUTIVE_FAILURES) {
+        console.warn(`[Live] Session ${sessionKey} failed ${failures} times in a row — stopping poller. Run reset if this is a test race.`);
+        stopPolling(sessionKey);
+      } else {
+        console.error(`[Live] Poll error session ${sessionKey} (${failures}/${MAX_CONSECUTIVE_FAILURES}):`, (err as Error).message);
+      }
     }
   };
 

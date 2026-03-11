@@ -14,14 +14,26 @@ jobs:
       - name: Get fresh access token
         id: auth
         run: |
-          RESPONSE=$(curl -s -X POST "${{ secrets.SERVER_URL }}/api/auth/refresh" \
+          echo "Calling refresh endpoint..."
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "${{ secrets.SERVER_URL }}/api/auth/refresh" \
             -H "Content-Type: application/json" \
             -d '{"refreshToken":"${{ secrets.BOT_REFRESH_TOKEN }}"}')
           
-          ACCESS_TOKEN=$(echo $RESPONSE | jq -r '.accessToken')
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '$d')
           
-          if [ "$ACCESS_TOKEN" = "null" ]; then
-            echo "Failed to refresh token"
+          echo "Response code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Error response: $BODY"
+            exit 1
+          fi
+          
+          ACCESS_TOKEN=$(echo "$BODY" | jq -r '.accessToken // empty')
+          
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to extract access token"
+            echo "Response: $BODY"
             exit 1
           fi
           

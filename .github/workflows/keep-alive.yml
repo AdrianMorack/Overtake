@@ -13,4 +13,12 @@ jobs:
     steps:
       - name: Ping health endpoint
         run: |
-          curl -s "${{ secrets.SERVER_URL }}/api/health" || echo "Server warming up..."
+          echo "Pinging server health endpoint..."
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" "${{ secrets.SERVER_URL }}/api/health")
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          echo "Health check status: $HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Server is awake"
+          else
+            echo "⚠️ Server returned $HTTP_CODE"
+          fi

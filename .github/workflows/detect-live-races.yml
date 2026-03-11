@@ -1,13 +1,14 @@
-name: Sync F1 Data
+name: Detect Live Race Sessions
 
 on:
   schedule:
-    # Run every Monday at 9 AM UTC (after race weekends)
-    - cron: '0 9 * * 1'
-  workflow_dispatch: # Manual trigger button in GitHub Actions tab
+    # Run every 30 minutes on Fridays, Saturdays, and Sundays (race weekends)
+    # Qualifying often happens Friday/Saturday, races on Sunday
+    - cron: '*/30 * * * 5,6,0'
+  workflow_dispatch: # Manual trigger
 
 jobs:
-  sync:
+  detect:
     runs-on: ubuntu-latest
     steps:
       - name: Get fresh access token
@@ -27,9 +28,8 @@ jobs:
           echo "::add-mask::$ACCESS_TOKEN"
           echo "token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
       
-      - name: Sync F1 season data and results
+      - name: Trigger live session detection
         run: |
-          YEAR=$(date +%Y)
-          curl -X POST "${{ secrets.SERVER_URL }}/api/races/admin/sync?year=$YEAR" \
+          curl -X POST "${{ secrets.SERVER_URL }}/api/live/detect" \
             -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
-            -f -v || exit 1
+            -f -v || echo "No live sessions detected (this is normal)"

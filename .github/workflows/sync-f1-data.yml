@@ -1,0 +1,35 @@
+name: Sync F1 Data
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC (after race weekends)
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Manual trigger button in GitHub Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get fresh access token
+        id: auth
+        run: |
+          RESPONSE=$(curl -s -X POST "${{ secrets.SERVER_URL }}/api/auth/refresh" \
+            -H "Content-Type: application/json" \
+            -d '{"refreshToken":"${{ secrets.BOT_REFRESH_TOKEN }}"}')
+          
+          ACCESS_TOKEN=$(echo $RESPONSE | jq -r '.accessToken')
+          
+          if [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "Failed to refresh token"
+            exit 1
+          fi
+          
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+      
+      - name: Sync F1 season data and results
+        run: |
+          YEAR=$(date +%Y)
+          curl -X POST "${{ secrets.SERVER_URL }}/api/races/admin/sync?year=$YEAR" \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+            -f -v || exit 1

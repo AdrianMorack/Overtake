@@ -27,7 +27,7 @@ export function Races() {
             {upcomingRaces.map((race, index) => (
               <motion.div
                 key={race.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 20 }} 
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >

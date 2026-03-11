@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Flag } from "lucide-react";
+import { Home, Flag, LayoutGrid, User } from "lucide-react";
 import { motion } from "motion/react";
 
 const navItems = [
   { path: "/dashboard", icon: Home, label: "Home" },
+  { path: "/grids", icon: LayoutGrid, label: "Grids" },
   { path: "/races", icon: Flag, label: "Races" },
+  { path: "/profile", icon: User, label: "Profile" },
 ];
 
 export function BottomNav() {

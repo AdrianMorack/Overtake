@@ -1,14 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
-import { Trophy, Flag, Home, MapPin } from "lucide-react";
+import { Flag, User } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function TopNav() {
   const location = useLocation();
+  const { user } = useAuth();
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
   const links = [
     { to: "/dashboard", label: "Dashboard" },
+    { to: "/grids", label: "My Grids" },
     { to: "/races", label: "Races" },
   ];
 
@@ -36,6 +39,21 @@ export function TopNav() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              to="/profile"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${
+                isActive("/profile")
+                  ? "border-theme-primary bg-theme-primary/10 text-theme-primary"
+                  : "border-border hover:border-theme-primary text-muted-foreground hover:text-theme-primary"
+              }`}
+            >
+              <div className="w-6 h-6 bg-theme-primary/20 rounded-full flex items-center justify-center">
+                <span className="text-xs text-theme-primary telemetry-text">
+                  {user?.username?.substring(0, 2).toUpperCase() ?? "?"}
+                </span>
+              </div>
+              <span className="text-sm">{user?.username}</span>
+            </Link>
           </div>
         </div>
       </div>

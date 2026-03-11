@@ -102,6 +102,13 @@ class ApiClient {
     return this.request("/auth/logout", { method: "POST", body });
   }
 
+  updateProfile(data: { favoriteTeam: string }) {
+    return this.request<{ user: { favoriteTeam: string } }>("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
   // ── Grids ─────────────────────────────────────────────────────────────────
   getGrids() {
     return this.request<Grid[]>("/grids");

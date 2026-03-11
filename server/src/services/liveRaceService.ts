@@ -68,6 +68,7 @@ export interface UserLivePoints {
   userId: string;
   username: string;
   avatarUrl: string | null;
+  favoriteTeam: string;
   livePoints: number;
   breakdown: PointBreakdownLive;
 }
@@ -296,7 +297,7 @@ export async function getLivePointsForGrid(
 ): Promise<UserLivePoints[]> {
   const predictions = await prisma.prediction.findMany({
     where: { raceWeekendId, gridId },
-    include: { user: { select: { id: true, username: true, avatarUrl: true } } },
+    include: { user: { select: { id: true, username: true, avatarUrl: true, favoriteTeam: true } } },
   });
 
   // Fetch stored results in case quali is already finalized
@@ -309,6 +310,14 @@ export async function getLivePointsForGrid(
   const isRaceSession = snapshot.sessionType === "Race" || snapshot.sessionName === "Race";
   const norm = (s: string) => s.trim().toUpperCase();
 
+  // Podium scoring: exact position = 3pts, in podium wrong slot = 1pt, else 0
+  const podiumScore = (predicted: string, exactCode: string, podiumCodes: string[]) => {
+    const n = norm(predicted);
+    if (n === norm(exactCode)) return 3;
+    if (podiumCodes.includes(n)) return 1;
+    return 0;
+  };
+
   type PredictionRow = (typeof predictions)[number];
 
   return predictions.map((pred: PredictionRow) => {
@@ -317,25 +326,25 @@ export async function getLivePointsForGrid(
     let fastestLap = 0, topTeam = 0;
 
     if (isRaceSession) {
-      // Race: use current live positions for race-category predictions
-      raceFirst  = top3[0]?.code === norm(pred.raceFirst)  ? 3 : 0;
-      raceSecond = top3[1]?.code === norm(pred.raceSecond) ? 2 : 0;
-      raceThird  = top3[2]?.code === norm(pred.raceThird)  ? 1 : 0;
+      const livePodium = top3.map(d => norm(d.code));
+      raceFirst  = podiumScore(pred.raceFirst,  top3[0]?.code ?? "", livePodium);
+      raceSecond = podiumScore(pred.raceSecond, top3[1]?.code ?? "", livePodium);
+      raceThird  = podiumScore(pred.raceThird,  top3[2]?.code ?? "", livePodium);
       fastestLap = snapshot.fastestLapDriverCode === norm(pred.fastestLap) ? 2 : 0;
       topTeam    = snapshot.topTeamByF1Points === norm(pred.topTeam) ? 1 : 0;
 
-      // Quali points: use stored results if available, otherwise live snapshot
       const qr = raceWeekend?.results;
       if (qr) {
-        qualiFirst  = qr.qualiFirst  === norm(pred.qualiFirst)  ? 3 : 0;
-        qualiSecond = qr.qualiSecond === norm(pred.qualiSecond) ? 2 : 0;
-        qualiThird  = qr.qualiThird  === norm(pred.qualiThird)  ? 1 : 0;
+        const qPodium = [norm(qr.qualiFirst), norm(qr.qualiSecond), norm(qr.qualiThird)];
+        qualiFirst  = podiumScore(pred.qualiFirst,  qr.qualiFirst,  qPodium);
+        qualiSecond = podiumScore(pred.qualiSecond, qr.qualiSecond, qPodium);
+        qualiThird  = podiumScore(pred.qualiThird,  qr.qualiThird,  qPodium);
       }
     } else {
-      // Qualifying session: only resolve qualifying positions
-      qualiFirst  = top3[0]?.code === norm(pred.qualiFirst)  ? 3 : 0;
-      qualiSecond = top3[1]?.code === norm(pred.qualiSecond) ? 2 : 0;
-      qualiThird  = top3[2]?.code === norm(pred.qualiThird)  ? 1 : 0;
+      const livePodium = top3.map(d => norm(d.code));
+      qualiFirst  = podiumScore(pred.qualiFirst,  top3[0]?.code ?? "", livePodium);
+      qualiSecond = podiumScore(pred.qualiSecond, top3[1]?.code ?? "", livePodium);
+      qualiThird  = podiumScore(pred.qualiThird,  top3[2]?.code ?? "", livePodium);
     }
 
     const breakdown: PointBreakdownLive = {
@@ -349,6 +358,7 @@ export async function getLivePointsForGrid(
       userId: pred.user.id,
       username: pred.user.username,
       avatarUrl: pred.user.avatarUrl ?? null,
+      favoriteTeam: pred.user.favoriteTeam ?? "ferrari",
       livePoints,
       breakdown,
     };

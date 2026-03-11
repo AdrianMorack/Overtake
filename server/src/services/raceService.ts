@@ -2,7 +2,7 @@ import prisma from "../config/database";
 
 export async function getRaceWeekends(season: number = new Date().getFullYear()) {
   return prisma.raceWeekend.findMany({
-    where: { season },
+    where: { OR: [{ season }, { status: "IN_PROGRESS" }] },
     orderBy: { round: "asc" },
     include: { results: true },
   });

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { validate } from "../middleware/validate";
+import { authenticate } from "../middleware/auth";
 import * as authService from "../services/authService";
 
 const router = Router();
@@ -50,6 +51,20 @@ router.post("/refresh", validate(refreshSchema), async (req: Request, res: Respo
 router.post("/logout", validate(refreshSchema), async (req: Request, res: Response) => {
   await authService.logout(req.body.refreshToken);
   res.json({ message: "Logged out" });
+});
+
+router.patch("/me", authenticate, async (req: Request, res: Response) => {
+  try {
+    const { favoriteTeam } = req.body;
+    if (typeof favoriteTeam !== "string") {
+      res.status(400).json({ error: "favoriteTeam is required" });
+      return;
+    }
+    const result = await authService.updateProfile(req.user!.userId, favoriteTeam);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 export default router;

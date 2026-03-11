@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "motion/react";
 import {
   useLiveRace,
   DriverLiveData,
@@ -95,41 +96,109 @@ function TimingTower({ drivers }: { drivers: DriverLiveData[] }) {
   );
 }
 
-function LivePointsTable({ points, maxPoints }: { points: UserLivePoints[]; maxPoints: number }) {
+function LivePointsCards({ points, maxPoints }: { points: UserLivePoints[]; maxPoints: number }) {
+  const TEAM_COLORS: Record<string, { primary: string; secondary: string }> = {
+    ferrari:        { primary: "#dc0000", secondary: "#fff100" },
+    mercedes:       { primary: "#00d2be", secondary: "#c0c0c0" },
+    redbull:        { primary: "#0600ef", secondary: "#dc0000" },
+    mclaren:        { primary: "#ff8700", secondary: "#0090ff" },
+    alpine:         { primary: "#0090ff", secondary: "#ff87bc" },
+    "aston-martin": { primary: "#006f62", secondary: "#00f5d4" },
+    williams:       { primary: "#005aff", secondary: "#00a0de" },
+  };
+
   const sorted = [...points].sort((a, b) => b.livePoints - a.livePoints);
+
   return (
-    <div style={{ flex: "1 1 260px", background: "#111", borderRadius: 8, overflow: "hidden" }}>
-      <h3 style={sectionHeading}>Live Points</h3>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-        <thead>
-          <tr style={{ borderBottom: "1px solid #333" }}>
-            <th style={th}>#</th>
-            <th style={{ ...th, textAlign: "left" }}>User</th>
-            <th style={th}>Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((p, i) => (
-            <tr key={p.userId} style={{ borderBottom: "1px solid #1a1a1a" }}>
-              <td style={td}>{i + 1}</td>
-              <td style={{ ...td, textAlign: "left" }}>{p.username}</td>
-              <td style={td}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div style={{ marginBottom: 24 }}>
+      <h3 style={sectionHeading}>Prediction Standings</h3>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <AnimatePresence>
+          {sorted.map((p, i) => {
+            const color = TEAM_COLORS[p.favoriteTeam]?.primary ?? "#e10600";
+            const bar = maxPoints > 0 ? (p.livePoints / maxPoints) * 100 : 0;
+            return (
+              <motion.div
+                key={p.userId}
+                layout
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ layout: { type: "spring", stiffness: 300, damping: 30 }, duration: 0.3 }}
+                style={{
+                  flex: "1 1 150px",
+                  minWidth: 150,
+                  maxWidth: 220,
+                  background: "#111",
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  borderTop: `3px solid ${color}`,
+                  padding: "12px 14px",
+                  boxShadow: `0 0 16px ${color}28`,
+                }}
+              >
+                {/* Rank + name */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "#555",
+                      minWidth: 20,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    P{i + 1}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 14,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}
+                  >
+                    {p.username}
+                  </span>
+                </div>
+
+                {/* Points + bar */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div
                     style={{
-                      height: 6,
-                      width: Math.max(4, (p.livePoints / maxPoints) * 80),
-                      background: "#e10600",
-                      borderRadius: 3,
+                      flex: 1,
+                      height: 4,
+                      background: "#222",
+                      borderRadius: 2,
+                      overflow: "hidden",
                     }}
-                  />
-                  {p.livePoints}
+                  >
+                    <motion.div
+                      animate={{ width: `${bar}%` }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      style={{ height: "100%", background: color, borderRadius: 2 }}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color,
+                      minWidth: 28,
+                      textAlign: "right",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {p.livePoints}
+                  </span>
                 </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -286,22 +355,21 @@ export function LiveRacePage() {
 
         {snapshot && (
           <>
-            {/* Timing + Points row */}
+            {/* Prediction standings - above timing tower */}
+            <LivePointsCards points={livePoints} maxPoints={maxPoints} />
+
+            {/* Timing + Race Control row */}
             <div
               style={{
                 display: "flex",
                 gap: 24,
                 flexWrap: "wrap",
                 alignItems: "flex-start",
-                marginBottom: 24,
               }}
             >
               <TimingTower drivers={snapshot.drivers} />
-              <LivePointsTable points={livePoints} maxPoints={maxPoints} />
+              <RaceControlFeed messages={snapshot.raceControl} />
             </div>
-
-            {/* Race Control */}
-            <RaceControlFeed messages={snapshot.raceControl} />
           </>
         )}
       </div>

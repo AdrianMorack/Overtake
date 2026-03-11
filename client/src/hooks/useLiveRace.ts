@@ -61,6 +61,7 @@ export interface UserLivePoints {
   userId: string;
   username: string;
   avatarUrl: string | null;
+  favoriteTeam: string;
   livePoints: number;
   breakdown: PointBreakdownLive;
 }

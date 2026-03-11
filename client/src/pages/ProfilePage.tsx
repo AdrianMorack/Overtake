@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Palette, LogOut, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { api } from "../api/client";
 
 const TEAMS = [
   { id: "ferrari", name: "Ferrari", primary: "#dc0000", secondary: "#fff100" },
@@ -27,6 +28,7 @@ export function ProfilePage() {
     const key = user ? `favoriteTeam:${user.id}` : "favoriteTeam";
     localStorage.setItem(key, teamId);
     document.body.setAttribute("data-team", teamId);
+    api.updateProfile({ favoriteTeam: teamId }).catch(() => {});
   };
 
   const handleLogout = async () => {

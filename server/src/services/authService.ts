@@ -15,6 +15,15 @@ function generateRefreshToken(): string {
   return crypto.randomBytes(40).toString("hex");
 }
 
+export async function updateProfile(userId: string, favoriteTeam: string) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { favoriteTeam },
+    select: { id: true, email: true, username: true, favoriteTeam: true },
+  });
+  return { user };
+}
+
 export async function register(email: string, username: string, password: string) {
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email }, { username }] },

@@ -13,6 +13,9 @@ import { startSyncJobs } from "./jobs/syncF1Data";
 
 const app = express();
 
+// ─── Trust proxy (required for Render/Cloudflare) ───────────────────────────
+app.set('trust proxy', true);
+
 // ─── Security headers ────────────────────────────────────────────────────────
 app.use(helmet());
 

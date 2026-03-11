@@ -43,10 +43,12 @@ function AppRoutes() {
 }
 
 function ThemeInit() {
+  const { user } = useAuth();
   useEffect(() => {
-    const team = localStorage.getItem("favoriteTeam") ?? "ferrari";
+    const key = user ? `favoriteTeam:${user.id}` : "favoriteTeam";
+    const team = localStorage.getItem(key) ?? "ferrari";
     document.body.setAttribute("data-team", team);
-  }, []);
+  }, [user?.id]);
   return null;
 }
 

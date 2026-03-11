@@ -18,12 +18,14 @@ export function ProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [selectedTeam, setSelectedTeam] = useState(() => {
-    return localStorage.getItem("favoriteTeam") ?? "ferrari";
+    const key = user ? `favoriteTeam:${user.id}` : "favoriteTeam";
+    return localStorage.getItem(key) ?? "ferrari";
   });
 
   const handleTeamSelect = (teamId: string) => {
     setSelectedTeam(teamId);
-    localStorage.setItem("favoriteTeam", teamId);
+    const key = user ? `favoriteTeam:${user.id}` : "favoriteTeam";
+    localStorage.setItem(key, teamId);
     document.body.setAttribute("data-team", teamId);
   };
 

@@ -115,7 +115,7 @@ export function PredictionForm({ raceWeekendId, gridId, onSuccess }: Props) {
         style={{
           marginTop: 16,
           padding: "10px 24px",
-          background: (allFilled && !success) ? "#e10600" : "#ccc",
+          background: (allFilled && !success) ? "var(--theme-primary)" : "#ccc",
           color: "#fff",
           border: "none",
           borderRadius: 6,

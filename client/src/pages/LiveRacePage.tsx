@@ -18,10 +18,10 @@ export const TEAM_COLORS: Record<string, { primary: string; secondary: string }>
   alpine:         { primary: "#176FB5", secondary: "#ED79B6" },
   astonmartin:    { primary: "#15674C", secondary: "#262626" },
   williams:       { primary: "#0B2BE5", secondary: "#B0B0B0" },
-  haas:           { primary: "#DEDEDE", secondary: "#E11412" },
-  racingbulls:    { primary: "#D4D7D5", secondary: "#2459B3" },
-  cadillac:       { primary: "#B3B3B3", secondary: "#52514F" },
-  audi:           { primary: "#D4D0CF", secondary: "#F82724" },
+  haas:           { primary: "#E11412", secondary: "#dedede" },
+  racingbulls:    { primary: "#2459B3", secondary: "#d4d4d4" },
+  cadillac:       { primary: "#C8A951", secondary: "#1A1A1A" },
+  audi:           { primary: "#F82724", secondary: "#D4D0CF" },
 };
 
 function hexToRgb(hex: string): string {
@@ -43,12 +43,12 @@ function getContrastFg(hex: string): string {
 export function applyTeamTheme(teamId: string): void {
   const colors = TEAM_COLORS[teamId] ?? TEAM_COLORS.ferrari;
   document.body.setAttribute("data-team", teamId);
-  const root = document.documentElement;
-  root.style.setProperty("--theme-primary", colors.primary);
-  root.style.setProperty("--theme-secondary", colors.secondary);
-  root.style.setProperty("--theme-primary-rgb", hexToRgb(colors.primary));
-  root.style.setProperty("--theme-secondary-rgb", hexToRgb(colors.secondary));
-  root.style.setProperty("--theme-secondary-fg", getContrastFg(colors.secondary));
+  // Inline styles on body beat the CSS fallback rules that also target body
+  document.body.style.setProperty("--theme-primary", colors.primary);
+  document.body.style.setProperty("--theme-secondary", colors.secondary);
+  document.body.style.setProperty("--theme-primary-rgb", hexToRgb(colors.primary));
+  document.body.style.setProperty("--theme-secondary-rgb", hexToRgb(colors.secondary));
+  document.body.style.setProperty("--theme-secondary-fg", getContrastFg(colors.secondary));
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ const sectionHeading: React.CSSProperties = {
   fontSize: 13,
   textTransform: "uppercase",
   letterSpacing: 1,
-  color: "#e10600",
+  color: "var(--theme-primary)",
 };
 
 const th: React.CSSProperties = {
@@ -312,7 +312,7 @@ export function LiveRacePage() {
       <div
         style={{
           background: "#111",
-          borderBottom: "2px solid #e10600",
+          borderBottom: "2px solid var(--theme-primary)",
           padding: "12px 24px",
           display: "flex",
           alignItems: "center",
@@ -322,7 +322,7 @@ export function LiveRacePage() {
       >
         <Link
           to={`/grids/${gridId}`}
-          style={{ color: "#e10600", fontSize: 13, textDecoration: "none" }}
+          style={{ color: "var(--theme-primary)", fontSize: 13, textDecoration: "none" }}
         >
           ← Grid
         </Link>
@@ -335,7 +335,7 @@ export function LiveRacePage() {
                 fontSize: 11,
                 padding: "2px 8px",
                 borderRadius: 10,
-                background: connected && snapshot?.isActive ? "#e10600" : "#444",
+                background: connected && snapshot?.isActive ? "var(--theme-primary)" : "#444",
                 fontWeight: 600,
               }}
             >
@@ -366,8 +366,8 @@ export function LiveRacePage() {
         {error && (
           <div
             style={{
-              background: "#3a0000",
-              border: "1px solid #e10600",
+              background: "rgba(var(--theme-primary-rgb), 0.15)",
+              border: "1px solid var(--theme-primary)",
               borderRadius: 6,
               padding: "10px 16px",
               marginBottom: 16,

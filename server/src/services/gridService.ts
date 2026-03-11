@@ -136,6 +136,7 @@ export async function getGridLeaderboard(gridId: string, season?: number) {
           id: true,
           username: true,
           avatarUrl: true,
+          favoriteTeam: true,
           predictions: {
             where: { gridId },
             select: { totalPoints: true, raceWeekendId: true },
@@ -149,6 +150,7 @@ export async function getGridLeaderboard(gridId: string, season?: number) {
     userId: string;
     username: string;
     avatarUrl: string | null;
+    favoriteTeam: string;
     totalPoints: number;
     racesPlayed: number;
   };
@@ -160,6 +162,7 @@ export async function getGridLeaderboard(gridId: string, season?: number) {
       userId: m.user.id,
       username: m.user.username,
       avatarUrl: m.user.avatarUrl,
+      favoriteTeam: m.user.favoriteTeam,
       totalPoints: m.user.predictions.reduce(
         (sum: number, p: { totalPoints: number }) => sum + p.totalPoints,
         0

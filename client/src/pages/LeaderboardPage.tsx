@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Trophy, Crown, Users as UsersIcon, Eye, EyeOff, Check, X } from "lucide-react";
+import { TEAM_COLORS } from "./LiveRacePage";
 import { api } from "../api/client";
 import { LeaderboardEntry, RaceWeekend, Prediction, Grid } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -179,9 +180,19 @@ export function LeaderboardPage() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-theme-primary to-theme-secondary rounded-full flex items-center justify-center text-xs telemetry-text text-black">
-                          {entry.username.substring(0, 2).toUpperCase()}
-                        </div>
+                        {(() => {
+                          const tc = (entry.favoriteTeam && TEAM_COLORS[entry.favoriteTeam]) || TEAM_COLORS.ferrari;
+                          return entry.avatarUrl ? (
+                            <img src={entry.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-2" style={{ "--tw-ring-color": tc.primary } as React.CSSProperties} />
+                          ) : (
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-xs telemetry-text"
+                              style={{ background: tc.primary, color: tc.secondary }}
+                            >
+                              {entry.username.substring(0, 2).toUpperCase()}
+                            </div>
+                          );
+                        })()}
                         <span className={entry.userId === user?.id ? "text-theme-primary" : ""}>
                           {entry.username}
                         </span>

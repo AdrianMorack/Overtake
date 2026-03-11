@@ -98,6 +98,7 @@ export interface LeaderboardEntry {
   userId: string;
   username: string;
   avatarUrl: string | null;
+  favoriteTeam: string;
   totalPoints: number;
   racesPlayed: number;
 }

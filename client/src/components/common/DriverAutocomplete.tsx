@@ -34,8 +34,8 @@ export function DriverAutocomplete({ drivers, value, onChange, label, placeholde
   }, []);
 
   return (
-    <div ref={ref} style={{ position: "relative", marginBottom: 12 }}>
-      <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>{label}</label>
+    <div ref={ref} className="relative">
+      <label className="block text-xs mb-2 text-muted-foreground telemetry-text">{label}</label>
       <input
         type="text"
         value={open ? query : selectedDriver ? `${selectedDriver.firstName} ${selectedDriver.lastName} (${selectedDriver.code})` : ""}
@@ -48,32 +48,10 @@ export function DriverAutocomplete({ drivers, value, onChange, label, placeholde
           setQuery("");
           setOpen(true);
         }}
-        style={{
-          width: "100%",
-          padding: "8px 12px",
-          border: "1px solid #ccc",
-          borderRadius: 6,
-          fontSize: 14,
-        }}
+        className="w-full px-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:border-theme-primary transition-colors text-sm"
       />
       {open && filtered.length > 0 && (
-        <ul
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            maxHeight: 200,
-            overflowY: "auto",
-            background: "#fff",
-            border: "1px solid #ccc",
-            borderRadius: 6,
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            zIndex: 10,
-          }}
-        >
+        <ul className="absolute top-full left-0 right-0 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl z-20 mt-1 p-0 list-none">
           {filtered.map((d) => (
             <li
               key={d.id}
@@ -82,27 +60,18 @@ export function DriverAutocomplete({ drivers, value, onChange, label, placeholde
                 setQuery("");
                 setOpen(false);
               }}
-              style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: d.code === value ? "#e8f4fd" : "transparent",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f0f0")}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = d.code === value ? "#e8f4fd" : "transparent")
-              }
+              className={`px-4 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-muted/50 transition-colors text-sm ${
+                d.code === value ? "bg-theme-primary/10 text-theme-primary" : ""
+              }`}
             >
               {d.headshotUrl && (
-                <img src={d.headshotUrl} alt="" style={{ width: 28, height: 28, borderRadius: "50%" }} />
+                <img src={d.headshotUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
               )}
               <span>
                 <strong>{d.code}</strong> — {d.firstName} {d.lastName}
               </span>
               {d.team && (
-                <span style={{ marginLeft: "auto", fontSize: 12, color: "#888" }}>
+                <span className="ml-auto text-xs text-muted-foreground">
                   {d.team.name}
                 </span>
               )}

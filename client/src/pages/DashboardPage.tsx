@@ -112,7 +112,7 @@ export function DashboardPage() {
           <div className="grid-panel p-6 rounded-xl">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <div className="text-xs text-muted-foreground telemetry-text mb-2">
+                <div className="text-s text-muted-foreground telemetry-text mb-2">
                   ROUND {nextRace.round} • {nextRace.country.toUpperCase()}
                 </div>
                 <h3 className="text-xl mb-1">{nextRace.raceName}</h3>
@@ -188,9 +188,6 @@ export function DashboardPage() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-base">{grid.name}</h3>
-                      <span className="text-xs text-theme-primary telemetry-text border border-theme-primary/30 px-2 py-0.5 rounded">
-                        {grid.code}
-                      </span>
                     </div>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Users className="w-4 h-4" />
@@ -223,13 +220,13 @@ export function DashboardPage() {
             </motion.div>
           </Link>
           {grids[0] && (
-            <Link to={`/grids/${grids[0].id}`}>
+            <Link to={"/profile"}>
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className="grid-panel p-6 rounded-lg hover:border-theme-primary transition-all cursor-pointer"
               >
                 <Trophy className="w-8 h-8 text-theme-primary mb-3" />
-                <h3 className="mb-2">Leaderboard</h3>
+                <h3 className="mb-2">Profile Settings</h3>
                 <p className="text-sm text-muted-foreground">Check your rankings</p>
               </motion.div>
             </Link>

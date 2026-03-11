@@ -17,9 +17,9 @@ export async function createGrid(name: string, ownerId: string, season: number =
     data: { name, code, ownerId, season },
   });
 
-  // Auto-join the creator
+  // Auto-join the creator as ACTIVE
   await prisma.gridMembership.create({
-    data: { userId: ownerId, gridId: grid.id },
+    data: { userId: ownerId, gridId: grid.id, status: "ACTIVE" },
   });
 
   return grid;
@@ -35,7 +35,7 @@ export async function joinGrid(code: string, userId: string) {
   if (existing) throw new Error("Already a member of this grid");
 
   await prisma.gridMembership.create({
-    data: { userId, gridId: grid.id },
+    data: { userId, gridId: grid.id, status: "PENDING" },
   });
 
   return grid;
@@ -47,13 +47,15 @@ export async function getUserGrids(userId: string) {
     include: {
       grid: {
         include: {
-          memberships: { include: { user: { select: { id: true, username: true, avatarUrl: true } } } },
+          memberships: {
+            include: { user: { select: { id: true, username: true, avatarUrl: true } } },
+          },
         },
       },
     },
   });
   type Membership = (typeof memberships)[number];
-  return memberships.map((m: Membership) => m.grid);
+  return memberships.map((m: Membership) => ({ ...m.grid, memberStatus: m.status }));
 }
 
 export async function getGrid(gridId: string) {
@@ -64,6 +66,7 @@ export async function getGrid(gridId: string) {
         include: {
           user: { select: { id: true, username: true, avatarUrl: true } },
         },
+        orderBy: { joinedAt: "asc" },
       },
     },
   });
@@ -91,6 +94,23 @@ export async function deleteGrid(gridId: string, userId: string) {
   await prisma.grid.delete({ where: { id: gridId } });
 }
 
+export async function approveMember(gridId: string, targetUserId: string, requesterId: string) {
+  const grid = await prisma.grid.findUnique({ where: { id: gridId } });
+  if (!grid) throw new Error("Grid not found");
+  if (grid.ownerId !== requesterId) throw new Error("Only the grid owner can approve members");
+
+  const membership = await prisma.gridMembership.findUnique({
+    where: { userId_gridId: { userId: targetUserId, gridId } },
+  });
+  if (!membership) throw new Error("User is not a member of this grid");
+  if (membership.status === "ACTIVE") throw new Error("User is already approved");
+
+  return prisma.gridMembership.update({
+    where: { userId_gridId: { userId: targetUserId, gridId } },
+    data: { status: "ACTIVE" },
+  });
+}
+
 export async function removeMember(gridId: string, targetUserId: string, userId: string) {
   const grid = await prisma.grid.findUnique({ where: { id: gridId } });
   if (!grid) throw new Error("Grid not found");
@@ -109,7 +129,7 @@ export async function removeMember(gridId: string, targetUserId: string, userId:
 
 export async function getGridLeaderboard(gridId: string, season?: number) {
   const memberships = await prisma.gridMembership.findMany({
-    where: { gridId },
+    where: { gridId, status: "ACTIVE" },
     include: {
       user: {
         select: {

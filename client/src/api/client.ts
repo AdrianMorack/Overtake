@@ -155,6 +155,12 @@ class ApiClient {
     });
   }
 
+  approveMember(gridId: string, userId: string) {
+    return this.request(`/grids/${encodeURIComponent(gridId)}/members/${encodeURIComponent(userId)}/approve`, {
+      method: "POST",
+    });
+  }
+
   // ── Races ─────────────────────────────────────────────────────────────────
   getRaceWeekends(season: number = new Date().getFullYear()) {
     return this.request<RaceWeekend[]>(`/races/weekends?season=${season}`);

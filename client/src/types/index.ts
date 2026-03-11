@@ -20,6 +20,7 @@ export interface Grid {
   code: string;
   ownerId: string;
   season: number;
+  memberStatus?: "ACTIVE" | "PENDING";
   memberships?: GridMembership[];
 }
 
@@ -27,6 +28,7 @@ export interface GridMembership {
   id: string;
   userId: string;
   gridId: string;
+  status: "ACTIVE" | "PENDING";
   user: Pick<User, "id" | "username" | "avatarUrl">;
 }
 

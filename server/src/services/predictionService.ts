@@ -25,11 +25,12 @@ export async function submitPrediction(
     throw new Error("Predictions are locked for this race");
   }
 
-  // Verify user is member of grid
+  // Verify user is an ACTIVE member of grid
   const membership = await prisma.gridMembership.findUnique({
     where: { userId_gridId: { userId, gridId } },
   });
   if (!membership) throw new Error("You are not a member of this grid");
+  if (membership.status === "PENDING") throw new Error("Your membership is pending approval");
 
   // Upsert prediction (allows editing before lock)
   const prediction = await prisma.prediction.upsert({
@@ -60,7 +61,7 @@ export async function getRacePredictions(raceWeekendId: string, gridId: string) 
 export async function isGridMember(userId: string, gridId: string): Promise<boolean> {
   const membership = await prisma.gridMembership.findUnique({
     where: { userId_gridId: { userId, gridId } },
-    select: { userId: true },
+    select: { status: true },
   });
-  return membership !== null;
+  return membership?.status === "ACTIVE";
 }

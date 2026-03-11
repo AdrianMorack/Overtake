@@ -77,6 +77,15 @@ router.delete("/:gridId", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/:gridId/members/:userId/approve", async (req: Request, res: Response) => {
+  try {
+    await gridService.approveMember(req.params.gridId, req.params.userId, req.user!.userId);
+    res.json({ message: "Member approved" });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.delete("/:gridId/members/:userId", async (req: Request, res: Response) => {
   try {
     await gridService.removeMember(req.params.gridId, req.params.userId, req.user!.userId);

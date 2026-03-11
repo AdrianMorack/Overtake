@@ -59,6 +59,7 @@ model GridMembership {
   id       String   @id @default(cuid())
   userId   String   @map("user_id")
   gridId   String   @map("grid_id")
+  status   String   @default("ACTIVE") @map("status")
   joinedAt DateTime @default(now()) @map("joined_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

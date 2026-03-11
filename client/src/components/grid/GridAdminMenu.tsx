@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { MoreVertical, Edit2, Users as UsersIcon, Trash2, X, AlertTriangle } from "lucide-react";
+import { MoreVertical, Edit2, Users as UsersIcon, Trash2, X, AlertTriangle, Check } from "lucide-react";
 import { api } from "../../api/client";
 
 interface GridAdminMenuProps {
@@ -20,6 +21,8 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleRename = async () => {
     if (!newName.trim() || newName === gridName) {
@@ -59,25 +62,32 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
   return (
     <div className="relative">
       <button
-        onClick={() => setMenuOpen(!menuOpen)}
+        ref={buttonRef}
+        onClick={() => {
+          if (!menuOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdownPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+          }
+          setMenuOpen(!menuOpen);
+        }}
         className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
         aria-label="Grid settings"
       >
         <MoreVertical className="w-5 h-5" />
       </button>
 
-      {/* Dropdown */}
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-50"
-            >
+      {/* Dropdown — portalled to escape overflow-hidden parents */}
+      {menuOpen && createPortal(
+        <>
+          <div className="fixed inset-0 z-[199]" onClick={() => setMenuOpen(false)} />
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            style={{ top: dropdownPos.top, right: dropdownPos.right }}
+            className="fixed w-52 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[200]"
+          >
               <div className="px-3 py-2 panel-header">
                 <p className="text-xs text-muted-foreground telemetry-text">GRID SETTINGS</p>
               </div>
@@ -103,10 +113,10 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Grid</span>
               </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          </motion.div>
+        </>,
+        document.body
+      )}
 
       {/* Rename Modal */}
       <AnimatePresence>
@@ -224,19 +234,20 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
 
 /* ── Shared Modal wrapper ─────────────────────────────────────────────────── */
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4" onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ duration: 0.2 }}
-        className="grid-panel rounded-lg p-6 w-full max-w-md shadow-2xl"
+        className="grid-panel rounded-lg p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {children}
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -251,7 +262,7 @@ const MembersModal: React.FC<MembersModalProps> = ({ gridId, onClose, onUpdate }
   const [grid, setGrid] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [kickingUserId, setKickingUserId] = useState<string | null>(null);
+  const [actionUserId, setActionUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGrid();
@@ -268,8 +279,22 @@ const MembersModal: React.FC<MembersModalProps> = ({ gridId, onClose, onUpdate }
     }
   };
 
+  const handleApprove = async (userId: string) => {
+    setActionUserId(userId);
+    setError("");
+    try {
+      await api.approveMember(gridId, userId);
+      await loadGrid();
+      onUpdate();
+    } catch (err: any) {
+      setError(err.message || "Failed to approve member");
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
   const handleKick = async (userId: string) => {
-    setKickingUserId(userId);
+    setActionUserId(userId);
     setError("");
     try {
       await api.kickMember(gridId, userId);
@@ -278,9 +303,12 @@ const MembersModal: React.FC<MembersModalProps> = ({ gridId, onClose, onUpdate }
     } catch (err: any) {
       setError(err.message || "Failed to remove member");
     } finally {
-      setKickingUserId(null);
+      setActionUserId(null);
     }
   };
+
+  const pending = grid?.memberships.filter((m: any) => m.status === "PENDING") ?? [];
+  const active = grid?.memberships.filter((m: any) => m.status !== "PENDING") ?? [];
 
   return (
     <Modal onClose={onClose}>
@@ -302,50 +330,89 @@ const MembersModal: React.FC<MembersModalProps> = ({ gridId, onClose, onUpdate }
       {error && <p className="text-red-500 text-xs telemetry-text mb-3">{error}</p>}
 
       {grid && (
-        <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-          {grid.memberships.map((membership: any) => (
-            <div
-              key={membership.userId}
-              className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                {membership.user.avatarUrl ? (
-                  <img
-                    src={membership.user.avatarUrl}
-                    alt=""
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-theme-primary/20 rounded-full flex items-center justify-center text-xs text-theme-primary telemetry-text">
-                    {membership.user.username.substring(0, 2).toUpperCase()}
+        <div className="space-y-4 mb-4">
+          {/* Pending approvals */}
+          {pending.length > 0 && (
+            <div>
+              <p className="text-xs telemetry-text text-yellow-500 mb-2">PENDING APPROVAL ({pending.length})</p>
+              <div className="space-y-2">
+                {pending.map((membership: any) => (
+                  <div
+                    key={membership.userId}
+                    className="flex items-center justify-between p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center text-xs text-yellow-500 telemetry-text">
+                        {membership.user.username.substring(0, 2).toUpperCase()}
+                      </div>
+                      <span className="text-sm">{membership.user.username}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleApprove(membership.userId)}
+                        disabled={actionUserId === membership.userId}
+                        className="p-1.5 rounded-full bg-green-500/20 hover:bg-green-500/40 text-green-400 transition-colors disabled:opacity-50"
+                        title="Approve"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleKick(membership.userId)}
+                        disabled={actionUserId === membership.userId}
+                        className="p-1.5 rounded-full bg-destructive/20 hover:bg-destructive/40 text-destructive transition-colors disabled:opacity-50"
+                        title="Reject"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                )}
-                <span className="text-sm">{membership.user.username}</span>
-                {membership.userId === grid.ownerId && (
-                  <span className="px-1.5 py-0.5 bg-theme-primary/20 border border-theme-primary/30 rounded text-xs text-theme-primary telemetry-text">
-                    OWNER
-                  </span>
-                )}
+                ))}
               </div>
-              {membership.userId !== grid.ownerId && (
-                <button
-                  onClick={() => handleKick(membership.userId)}
-                  disabled={kickingUserId === membership.userId}
-                  className="px-3 py-1 text-xs text-destructive border border-destructive/30 rounded hover:bg-destructive/10 transition-colors disabled:opacity-50 telemetry-text"
-                >
-                  {kickingUserId === membership.userId ? "REMOVING…" : "REMOVE"}
-                </button>
-              )}
             </div>
-          ))}
+          )}
+
+          {/* Active members */}
+          <div>
+            {pending.length > 0 && <p className="text-xs telemetry-text text-muted-foreground mb-2">ACTIVE MEMBERS ({active.length})</p>}
+            <div className="space-y-2">
+              {active.map((membership: any) => (
+                <div
+                  key={membership.userId}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {membership.user.avatarUrl ? (
+                      <img src={membership.user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 bg-theme-primary/20 rounded-full flex items-center justify-center text-xs text-theme-primary telemetry-text">
+                        {membership.user.username.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-sm">{membership.user.username}</span>
+                    {membership.userId === grid.ownerId && (
+                      <span className="px-1.5 py-0.5 bg-theme-primary/20 border border-theme-primary/30 rounded text-xs text-theme-primary telemetry-text">
+                        OWNER
+                      </span>
+                    )}
+                  </div>
+                  {membership.userId !== grid.ownerId && (
+                    <button
+                      onClick={() => handleKick(membership.userId)}
+                      disabled={actionUserId === membership.userId}
+                      className="px-3 py-1 text-xs text-destructive border border-destructive/30 rounded hover:bg-destructive/10 transition-colors disabled:opacity-50 telemetry-text"
+                    >
+                      {actionUserId === membership.userId ? "REMOVING…" : "REMOVE"}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       <div className="flex justify-end">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors"
-        >
+        <button onClick={onClose} className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors">
           Close
         </button>
       </div>

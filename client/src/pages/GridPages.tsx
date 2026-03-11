@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Users, Type, Key } from "lucide-react";
+import { ArrowLeft, Users, Type, Key, Loader2 } from "lucide-react";
 import { api } from "../api/client";
 
 export function CreateGridPage() {
@@ -98,15 +98,19 @@ export function CreateGridPage() {
 export function JoinGridPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
     try {
       const grid = await api.joinGrid(code.toUpperCase());
       navigate(`/grids/${grid.id}`);
     } catch (err: any) {
       setError(err.message);
+      setLoading(false);
     }
   };
 
@@ -153,13 +157,21 @@ export function JoinGridPage() {
             {error && <p className="text-red-500 text-sm telemetry-text">{error}</p>}
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
               type="submit"
-              disabled={code.length < 3}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-theme-primary hover:bg-theme-primary/90 disabled:bg-muted disabled:text-muted-foreground text-black rounded-lg transition-all glow-primary telemetry-text"
+              disabled={code.length < 3 || loading}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg transition-all telemetry-text ${
+                loading
+                  ? "bg-theme-primary/70 text-black cursor-wait glow-primary"
+                  : code.length < 3
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-theme-primary hover:bg-theme-primary/90 text-black glow-primary"
+              }`}
             >
-              JOIN GRID
+              {loading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> JOINING…</>
+              ) : "JOIN GRID"}
             </motion.button>
           </form>
         </div>

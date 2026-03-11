@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, CheckCircle2, Lock, Flag, Zap, Timer } from "lucide-react";
 import { api } from "../api/client";
-import { Driver, Team, RaceWeekend } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import { Driver, Grid, Team, RaceWeekend } from "../types";
 import { DriverAutocomplete } from "../components/common/DriverAutocomplete";
 import { TeamAutocomplete } from "../components/common/TeamAutocomplete";
 
@@ -40,8 +41,10 @@ function PositionSlot({
 export function PredictPage() {
   const { gridId, raceId } = useParams<{ gridId: string; raceId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [race, setRace] = useState<RaceWeekend | null>(null);
+  const [grid, setGrid] = useState<Grid | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,10 +70,12 @@ export function PredictPage() {
       api.getDrivers(),
       api.getTeams(),
       api.getMyPredictions(gridId),
-    ]).then(([weekends, d, t, predictions]) => {
+      api.getGrid(gridId),
+    ]).then(([weekends, d, t, predictions, g]) => {
       setRace(weekends.find((w) => w.id === raceId) || null);
       setDrivers(d);
       setTeams(t);
+      setGrid(g);
       const existing = predictions.find((p) => p.raceWeekendId === raceId);
       if (existing) {
         setForm({
@@ -115,6 +120,28 @@ export function PredictPage() {
     return (
       <div className="container mx-auto px-4 py-6 flex items-center justify-center min-h-64">
         <div className="text-muted-foreground telemetry-text text-sm animate-pulse">LOADING…</div>
+      </div>
+    );
+  }
+
+  const myMembership = grid?.memberships?.find((m) => m.userId === user?.id);
+  const isPending = myMembership?.status === "PENDING";
+
+  if (isPending) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <Link
+          to={`/grids/${gridId}`}
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-theme-primary transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm telemetry-text">BACK TO GRID</span>
+        </Link>
+        <div className="grid-panel p-8 rounded-lg mt-2 text-center border border-yellow-500/40 bg-yellow-500/10">
+          <span className="text-4xl mb-4 block">⏳</span>
+          <h2 className="text-yellow-300 telemetry-text text-lg mb-2">MEMBERSHIP PENDING</h2>
+          <p className="text-muted-foreground text-sm">Your request to join this grid is awaiting approval from the grid owner. Once approved, you'll be able to submit predictions.</p>
+        </div>
       </div>
     );
   }

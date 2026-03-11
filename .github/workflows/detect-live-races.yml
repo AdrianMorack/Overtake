@@ -1,0 +1,47 @@
+name: Detect Live Race Sessions
+
+on:
+  schedule:
+    # Run every 30 minutes on Fridays, Saturdays, and Sundays (race weekends)
+    # Qualifying often happens Friday/Saturday, races on Sunday
+    - cron: '*/30 * * * 5,6,0'
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get fresh access token
+        id: auth
+        run: |
+          echo "Calling refresh endpoint..."
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "${{ secrets.SERVER_URL }}/api/auth/refresh" \
+            -H "Content-Type: application/json" \
+            -d '{"refreshToken":"${{ secrets.BOT_REFRESH_TOKEN }}"}')
+          
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "Response code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Error response: $BODY"
+            exit 1
+          fi
+          
+          ACCESS_TOKEN=$(echo "$BODY" | jq -r '.accessToken // empty')
+          
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to extract access token"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+      
+      - name: Trigger live session detection
+        run: |
+          curl -X POST "${{ secrets.SERVER_URL }}/api/live/detect" \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+            -f -v || echo "No live sessions detected (this is normal)"

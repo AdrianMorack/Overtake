@@ -27,7 +27,7 @@ async function fetchJson<T>(path: string, params: Record<string, string> = {}): 
 
   const res = await fetch(url.toString(), {
     headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(5_000),
+    signal: AbortSignal.timeout(60_000), // 60 seconds - FastF1 needs time to cache data
   });
 
   if (!res.ok) {

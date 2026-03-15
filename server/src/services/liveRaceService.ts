@@ -347,10 +347,10 @@ export async function getLivePointsForGrid(
 
       const qr = raceWeekend?.results;
       if (qr) {
-        const qPodium = [norm(qr.qualiFirst), norm(qr.qualiSecond), norm(qr.qualiThird)];
-        qualiFirst  = podiumScore(pred.qualiFirst,  qr.qualiFirst,  qPodium);
-        qualiSecond = podiumScore(pred.qualiSecond, qr.qualiSecond, qPodium);
-        qualiThird  = podiumScore(pred.qualiThird,  qr.qualiThird,  qPodium);
+        const qPodium = [norm(qr.qualiFirst ?? ""), norm(qr.qualiSecond ?? ""), norm(qr.qualiThird ?? "")];
+        qualiFirst  = podiumScore(pred.qualiFirst,  qr.qualiFirst  ?? "", qPodium);
+        qualiSecond = podiumScore(pred.qualiSecond, qr.qualiSecond ?? "", qPodium);
+        qualiThird  = podiumScore(pred.qualiThird,  qr.qualiThird  ?? "", qPodium);
       }
     } else {
       const livePodium = top3.map(d => norm(d.code));

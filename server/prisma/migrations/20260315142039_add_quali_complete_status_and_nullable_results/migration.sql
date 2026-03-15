@@ -1,0 +1,12 @@
+-- AlterEnum
+ALTER TYPE "RaceStatus" ADD VALUE 'QUALI_COMPLETE';
+
+-- AlterTable
+ALTER TABLE "race_results" ALTER COLUMN "quali_first" DROP NOT NULL,
+ALTER COLUMN "quali_second" DROP NOT NULL,
+ALTER COLUMN "quali_third" DROP NOT NULL,
+ALTER COLUMN "race_first" DROP NOT NULL,
+ALTER COLUMN "race_second" DROP NOT NULL,
+ALTER COLUMN "race_third" DROP NOT NULL,
+ALTER COLUMN "fastest_lap" DROP NOT NULL,
+ALTER COLUMN "top_team" DROP NOT NULL;

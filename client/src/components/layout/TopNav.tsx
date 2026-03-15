@@ -13,6 +13,7 @@ export function TopNav() {
     { to: "/dashboard", label: "Dashboard" },
     { to: "/grids", label: "My Grids" },
     { to: "/races", label: "Races" },
+    { to: "/standings", label: "Standings" },
   ];
 
   return (

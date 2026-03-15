@@ -35,16 +35,7 @@ export function DashboardPage() {
             <p className="text-muted-foreground telemetry-text">{new Date().getFullYear()} SEASON</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground telemetry-text">{user?.username?.toUpperCase()}</span>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={logout}
-              className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-theme-primary transition-colors telemetry-text"
-            >
-              <LogOut className="w-4 h-4" />
-              LOGOUT
-            </motion.button>
+            
           </div>
         </div>
       </motion.div>

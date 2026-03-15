@@ -142,6 +142,7 @@ model RaceWeekend {
 
 enum RaceStatus {
   UPCOMING
+  QUALI_COMPLETE
   IN_PROGRESS
   COMPLETED
 }
@@ -153,16 +154,16 @@ model RaceResult {
   raceWeekendId  String @unique @map("race_weekend_id")
 
   // Store driver codes for clarity; ids reference Driver table
-  qualiFirst     String @map("quali_first")   // driver code
-  qualiSecond    String @map("quali_second")
-  qualiThird     String @map("quali_third")
+  qualiFirst     String? @map("quali_first")   // driver code (nullable for incremental)
+  qualiSecond    String? @map("quali_second")
+  qualiThird     String? @map("quali_third")
 
-  raceFirst      String @map("race_first")
-  raceSecond     String @map("race_second")
-  raceThird      String @map("race_third")
+  raceFirst      String? @map("race_first")
+  raceSecond     String? @map("race_second")
+  raceThird      String? @map("race_third")
 
-  fastestLap     String @map("fastest_lap")   // driver code
-  topTeam        String @map("top_team")       // team name
+  fastestLap     String? @map("fastest_lap")   // driver code
+  topTeam        String? @map("top_team")       // team name
 
   fetchedAt      DateTime @default(now()) @map("fetched_at")
 

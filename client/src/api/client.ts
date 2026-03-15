@@ -1,4 +1,4 @@
-import { AuthResponse, AuthTokens, Driver, Grid, LeaderboardEntry, Prediction, RaceWeekend, Team } from "../types";
+import { AuthResponse, AuthTokens, Driver, Grid, LeaderboardEntry, Prediction, RaceWeekend, StandingsData, Team } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api";
 
@@ -188,8 +188,9 @@ class ApiClient {
     raceThird: string;
     fastestLap: string;
     topTeam: string;
+    applyToAllGrids?: boolean;
   }) {
-    return this.request<Prediction>("/predictions", {
+    return this.request<Prediction | Prediction[]>("/predictions", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -203,6 +204,12 @@ class ApiClient {
     return this.request<Prediction[]>(
       `/predictions/race/${encodeURIComponent(raceWeekendId)}/grid/${encodeURIComponent(gridId)}`
     );
+  }
+
+  // ── Standings ─────────────────────────────────────────────────────────────
+  getStandings(season?: number) {
+    const params = season ? `?season=${season}` : "";
+    return this.request<StandingsData>(`/races/standings${params}`);
   }
 }
 

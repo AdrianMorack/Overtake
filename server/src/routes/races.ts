@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authenticate, authorizeAdmin } from "../middleware/auth";
 import * as raceService from "../services/raceService";
-import { syncSeasonData, syncRaceResults } from "../jobs/syncF1Data";
+import { syncSeasonData, syncRaceResults, syncQualiResults } from "../jobs/syncF1Data";
 
 const router = Router();
 
@@ -14,6 +14,7 @@ router.post("/admin/sync", authenticate, authorizeAdmin, async (req: Request, re
   }
   try {
     await syncSeasonData(year);
+    await syncQualiResults();
     await syncRaceResults();
     res.json({ message: `Sync complete for ${year}` });
   } catch (err: unknown) {
@@ -61,6 +62,16 @@ router.get("/teams", async (req: Request, res: Response) => {
   }
   const teams = await raceService.getTeams(season);
   res.json(teams);
+});
+
+router.get("/standings", async (req: Request, res: Response) => {
+  const season = req.query.season ? parseInt(req.query.season as string, 10) : new Date().getFullYear();
+  if (isNaN(season) || season < 2020 || season > 2030) {
+    res.status(400).json({ error: "Invalid season parameter" });
+    return;
+  }
+  const standings = await raceService.getStandings(season);
+  res.json(standings);
 });
 
 export default router;

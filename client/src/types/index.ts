@@ -59,20 +59,20 @@ export interface RaceWeekend {
   raceDate: string;
   qualifyingDate: string | null;
   predictionsLock: string;
-  status: "UPCOMING" | "IN_PROGRESS" | "COMPLETED";
+  status: "UPCOMING" | "QUALI_COMPLETE" | "IN_PROGRESS" | "COMPLETED";
   results: RaceResult | null;
 }
 
 export interface RaceResult {
   id: string;
-  qualiFirst: string;
-  qualiSecond: string;
-  qualiThird: string;
-  raceFirst: string;
-  raceSecond: string;
-  raceThird: string;
-  fastestLap: string;
-  topTeam: string;
+  qualiFirst: string | null;
+  qualiSecond: string | null;
+  qualiThird: string | null;
+  raceFirst: string | null;
+  raceSecond: string | null;
+  raceThird: string | null;
+  fastestLap: string | null;
+  topTeam: string | null;
 }
 
 export interface Prediction {
@@ -101,4 +101,26 @@ export interface LeaderboardEntry {
   favoriteTeam: string;
   totalPoints: number;
   racesPlayed: number;
+}
+
+export interface DriverStanding {
+  code: string;
+  name: string;
+  teamName: string;
+  teamColor: string | null;
+  points: number;
+  wins: number;
+}
+
+export interface TeamStanding {
+  name: string;
+  color: string | null;
+  points: number;
+  wins: number;
+}
+
+export interface StandingsData {
+  driverStandings: DriverStanding[];
+  teamStandings: TeamStanding[];
+  racesCompleted: number;
 }

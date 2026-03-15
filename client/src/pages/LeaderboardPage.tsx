@@ -59,7 +59,7 @@ export function LeaderboardPage() {
   }, [gridId]);
 
   const liveRaces = races.filter((r) => r.status === "IN_PROGRESS");
-  const upcomingRaces = races.filter((r) => r.status === "UPCOMING");
+  const upcomingRaces = races.filter((r) => r.status === "UPCOMING" || r.status === "QUALI_COMPLETE");
   const completedRaces = races.filter((r) => r.status === "COMPLETED");
   const isOwner = user && grid && user.id === grid.ownerId;
   const myMembership = grid?.memberships?.find((m) => m.userId === user?.id);
@@ -302,15 +302,23 @@ export function LeaderboardPage() {
               const hasPrediction = myPredictions.some(
                 (p) => p.raceWeekendId === r.id && p.gridId === gridId
               );
+              const isLocked = new Date() > new Date(r.predictionsLock);
+              const isQualiDone = r.status === "QUALI_COMPLETE";
               return (
                 <div key={r.id} className="p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs text-muted-foreground telemetry-text">ROUND {r.round}</span>
-                        <span className="px-2 py-0.5 bg-blue-600/20 border border-blue-600 rounded text-xs text-blue-500 telemetry-text">
-                          UPCOMING
-                        </span>
+                        {isQualiDone ? (
+                          <span className="px-2 py-0.5 bg-purple-600/20 border border-purple-600 rounded text-xs text-purple-400 telemetry-text">
+                            QUALI DONE
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-blue-600/20 border border-blue-600 rounded text-xs text-blue-500 telemetry-text">
+                            UPCOMING
+                          </span>
+                        )}
                         {hasPrediction && (
                           <span className="px-2 py-0.5 bg-green-600/20 border border-green-600 rounded text-xs text-green-500 telemetry-text">
                             PREDICTED
@@ -319,19 +327,46 @@ export function LeaderboardPage() {
                       </div>
                       <h4 className="mb-1">{r.raceName}</h4>
                       <p className="text-sm text-muted-foreground">{r.circuitName}, {r.country}</p>
+                      <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
+                        <span>Race: {new Date(r.raceDate).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
                     </div>
-                    <Link to={`/grids/${gridId}/race/${r.id}/predict`}>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        className={`px-4 py-2 rounded telemetry-text text-sm ${
-                          hasPrediction
-                            ? "bg-green-600/20 border border-green-600 text-green-500 hover:bg-green-600/30"
-                            : "bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg"
-                        }`}
-                      >
-                        {hasPrediction ? "EDIT" : "PREDICT"}
-                      </motion.button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {isLocked && hasPrediction && (
+                        <Link to={`/grids/${gridId}/race/${r.id}/predict`}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            className="px-4 py-2 bg-purple-600/20 border border-purple-600 text-purple-400 hover:bg-purple-600/30 rounded telemetry-text text-sm"
+                          >
+                            VIEW PICKS
+                          </motion.button>
+                        </Link>
+                      )}
+                      {isLocked && hasPrediction && (
+                        <Link to={`/grids/${gridId}/race/${r.id}/results`}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            className="px-4 py-2 bg-muted hover:bg-muted/80 text-muted-foreground rounded telemetry-text text-sm"
+                          >
+                            ALL PICKS
+                          </motion.button>
+                        </Link>
+                      )}
+                      {!isLocked && (
+                        <Link to={`/grids/${gridId}/race/${r.id}/predict`}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            className={`px-4 py-2 rounded telemetry-text text-sm ${
+                              hasPrediction
+                                ? "bg-green-600/20 border border-green-600 text-green-500 hover:bg-green-600/30"
+                                : "bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg"
+                            }`}
+                          >
+                            {hasPrediction ? "EDIT" : "PREDICT"}
+                          </motion.button>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

@@ -17,20 +17,31 @@ const submitSchema = z.object({
   raceThird: z.string(),
   fastestLap: z.string(),
   topTeam: z.string(),
+  applyToAllGrids: z.boolean().optional(),
 });
 
 router.use(authenticate);
 
 router.post("/", validate(submitSchema), async (req: Request, res: Response) => {
   try {
-    const { raceWeekendId, gridId, ...input } = req.body;
-    const prediction = await predictionService.submitPrediction(
-      req.user!.userId,
-      raceWeekendId,
-      gridId,
-      input
-    );
-    res.status(201).json(prediction);
+    const { raceWeekendId, gridId, applyToAllGrids, ...input } = req.body;
+
+    if (applyToAllGrids) {
+      const predictions = await predictionService.submitPredictionToAllGrids(
+        req.user!.userId,
+        raceWeekendId,
+        input
+      );
+      res.status(201).json(predictions);
+    } else {
+      const prediction = await predictionService.submitPrediction(
+        req.user!.userId,
+        raceWeekendId,
+        gridId,
+        input
+      );
+      res.status(201).json(prediction);
+    }
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

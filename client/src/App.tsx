@@ -12,6 +12,7 @@ import { RacesPage } from "./pages/RacesPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { LiveRacePage, applyTeamTheme } from "./pages/LiveRacePage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { StandingsPage } from "./pages/StandingsPage";
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
@@ -36,6 +37,7 @@ function AppRoutes() {
         <Route path="/grids/:gridId/race/:raceId/predict" element={<PredictPage />} />
         <Route path="/grids/:gridId/race/:raceId/results" element={<ResultsPage />} />
         <Route path="/grids/:gridId/live/:raceWeekendId" element={<LiveRacePage />} />
+        <Route path="/standings" element={<StandingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

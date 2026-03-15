@@ -1,4 +1,5 @@
 import { CronJob } from "cron";
+import { RaceStatus } from "@prisma/client";
 import prisma from "../config/database";
 import * as FastF1 from "../services/fastF1Client";
 import { scoreRace } from "../services/scoringService";
@@ -109,8 +110,82 @@ export async function syncSeasonData(year: number = new Date().getFullYear()) {
 }
 
 /**
+ * Fetch qualifying results once qualifying is done and score quali predictions.
+ * Runs frequently during qualifying windows.
+ */
+export async function syncQualiResults() {
+  console.log(`[Quali] Checking for qualifying results…`);
+
+  const pending = await prisma.raceWeekend.findMany({
+    where: {
+      status: "UPCOMING",
+      qualifyingDate: { lt: new Date() },
+      qualiSessionKey: { not: null },
+    },
+  });
+
+  for (const race of pending) {
+    if (!race.qualiSessionKey) continue;
+
+    try {
+      const qualiPositions = await FastF1.getFinalPositions(race.qualiSessionKey);
+      if (qualiPositions.length < 3) {
+        console.log(`[Quali] ${race.raceName}: insufficient qualifying data yet`);
+        continue;
+      }
+
+      // Need drivers for code lookup — use the quali session
+      let drivers;
+      try {
+        drivers = await FastF1.getSessionDrivers(race.qualiSessionKey);
+      } catch {
+        // Fallback: try race session
+        if (race.externalId) drivers = await FastF1.getSessionDrivers(race.externalId);
+        else continue;
+      }
+      const driverByNum = new Map(drivers.map((d) => [d.driver_number, d]));
+      const codeFor = (num: number) => driverByNum.get(num)?.name_acronym ?? "UNK";
+
+      const qualiData = {
+        qualiFirst: codeFor(qualiPositions[0].driver_number),
+        qualiSecond: codeFor(qualiPositions[1].driver_number),
+        qualiThird: codeFor(qualiPositions[2].driver_number),
+      };
+
+      // Store partial result (quali only)
+      await prisma.raceResult.upsert({
+        where: { raceWeekendId: race.id },
+        create: {
+          raceWeekendId: race.id,
+          ...qualiData,
+          raceFirst: null,
+          raceSecond: null,
+          raceThird: null,
+          fastestLap: null,
+          topTeam: null,
+        },
+        update: qualiData,
+      });
+
+      // Score predictions (partial — only quali points will be counted)
+      await scoreRace(race.id);
+
+      // Mark as QUALI_COMPLETE
+      await prisma.raceWeekend.update({
+        where: { id: race.id },
+        data: { status: RaceStatus.QUALI_COMPLETE },
+      });
+
+      console.log(`[Quali] ✓ Scored qualifying for ${race.raceName}`);
+    } catch (err) {
+      console.error(`[Quali] Error processing ${race.raceName}:`, err);
+    }
+  }
+}
+
+/**
  * Fetch official race results for completed races and score predictions.
- * Runs regularly (e.g. every 30 min on race days, or a few times daily).
+ * Runs regularly (e.g. every 5 min on race days).
  */
 export async function syncRaceResults() {
   console.log(`[Results] Checking for new race results…`);
@@ -118,7 +193,7 @@ export async function syncRaceResults() {
   // Find race weekends past their race date that haven't been completed yet
   const pending = await prisma.raceWeekend.findMany({
     where: {
-      status: { not: "COMPLETED" },
+      status: { in: [RaceStatus.UPCOMING, RaceStatus.QUALI_COMPLETE, RaceStatus.IN_PROGRESS] },
       raceDate: { lt: new Date() },
       externalId: { not: null },
     },
@@ -138,7 +213,11 @@ export async function syncRaceResults() {
       // Get qualifying final positions using the stored qualiSessionKey
       let qualiPositions: Awaited<ReturnType<typeof FastF1.getFinalPositions>> = [];
       if (race.qualiSessionKey) {
-        qualiPositions = await FastF1.getFinalPositions(race.qualiSessionKey);
+        try {
+          qualiPositions = await FastF1.getFinalPositions(race.qualiSessionKey);
+        } catch {
+          // Quali data may not be available yet
+        }
       }
 
       // Get fastest lap
@@ -152,7 +231,6 @@ export async function syncRaceResults() {
       const teamFor = (num: number) => driverByNum.get(num)?.team_name ?? "Unknown";
 
       // Determine top team (team of P1 + P2 combined, simplified as team of winner)
-      // A more accurate approach sums points of all drivers per team
       const topTeam = teamFor(racePositions[0].driver_number);
 
       const resultData = {
@@ -173,8 +251,14 @@ export async function syncRaceResults() {
         update: resultData,
       });
 
-      // Score all predictions
+      // Score all predictions (now with full results)
       await scoreRace(race.id);
+
+      // Mark race as completed
+      await prisma.raceWeekend.update({
+        where: { id: race.id },
+        data: { status: "COMPLETED" },
+      });
 
       console.log(`[Results] ✓ Scored ${race.raceName}`);
     } catch (err) {
@@ -190,8 +274,11 @@ export function startSyncJobs() {
   // Sync season data every day at 06:00 UTC
   new CronJob("0 6 * * *", () => syncSeasonData().catch(console.error), null, true, "UTC");
 
-  // Check for race results every 30 minutes
-  new CronJob("*/30 * * * *", () => syncRaceResults().catch(console.error), null, true, "UTC");
+  // Check for qualifying results every 5 minutes
+  new CronJob("*/5 * * * *", () => syncQualiResults().catch(console.error), null, true, "UTC");
+
+  // Check for race results every 5 minutes
+  new CronJob("*/5 * * * *", () => syncRaceResults().catch(console.error), null, true, "UTC");
 
   // Detect live sessions and start/stop polling every minute
   new CronJob("* * * * *", () => detectAndManageLiveSessions().catch(console.error), null, true, "UTC");

@@ -42,6 +42,37 @@ export async function submitPrediction(
   return prediction;
 }
 
+export async function submitPredictionToAllGrids(
+  userId: string,
+  raceWeekendId: string,
+  input: PredictionInput
+) {
+  // Verify race weekend exists and predictions are still open
+  const raceWeekend = await prisma.raceWeekend.findUnique({ where: { id: raceWeekendId } });
+  if (!raceWeekend) throw new Error("Race weekend not found");
+
+  if (new Date() > raceWeekend.predictionsLock) {
+    throw new Error("Predictions are locked for this race");
+  }
+
+  // Get all grids the user is an ACTIVE member of
+  const memberships = await prisma.gridMembership.findMany({
+    where: { userId, status: "ACTIVE" },
+  });
+
+  const results = [];
+  for (const m of memberships) {
+    const prediction = await prisma.prediction.upsert({
+      where: { userId_raceWeekendId_gridId: { userId, raceWeekendId, gridId: m.gridId } },
+      create: { userId, raceWeekendId, gridId: m.gridId, ...input },
+      update: { ...input },
+    });
+    results.push(prediction);
+  }
+
+  return results;
+}
+
 export async function getUserPredictions(userId: string, gridId: string) {
   return prisma.prediction.findMany({
     where: { userId, gridId },

@@ -13,8 +13,9 @@ import { startSyncJobs } from "./jobs/syncF1Data";
 
 const app = express();
 
-// ─── Trust proxy (required for Render/Cloudflare) ───────────────────────────
-app.set('trust proxy', true);
+// ─── Trust first proxy only (Render's load balancer) ────────────────────────
+// This is required for rate limiting to work correctly behind Render/Cloudflare
+app.set('trust proxy', 1);
 
 // ─── Security headers ────────────────────────────────────────────────────────
 app.use(helmet());

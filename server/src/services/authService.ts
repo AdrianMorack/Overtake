@@ -68,10 +68,21 @@ export async function refreshAccessToken(refreshToken: string) {
     throw new Error("Invalid or expired refresh token");
   }
 
-  // Rotate refresh token
-  await prisma.refreshToken.delete({ where: { id: stored.id } });
-  const tokens = await createTokens(stored.user.id, stored.user.email);
-  return tokens;
+  // For admin users (bot accounts), keep the same refresh token for GitHub Actions
+  // For regular users, rotate the refresh token for better security
+  const isAdmin = env.adminUserIds.includes(stored.user.id);
+  
+  if (isAdmin) {
+    // Don't rotate - just issue new access token with same refresh token
+    const payload: AuthPayload = { userId: stored.user.id, email: stored.user.email };
+    const accessToken = generateAccessToken(payload);
+    return { accessToken, refreshToken }; // Return original refresh token
+  } else {
+    // Rotate refresh token for regular users
+    await prisma.refreshToken.delete({ where: { id: stored.id } });
+    const tokens = await createTokens(stored.user.id, stored.user.email);
+    return tokens;
+  }
 }
 
 export async function logout(refreshToken: string) {

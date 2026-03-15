@@ -269,6 +269,15 @@ export async function syncRaceResults() {
 
 // ─── Cron Scheduling ────────────────────────────────────────────────────────
 
+/** Lightweight DB ping to prevent Neon from suspending the compute */
+async function keepAlive() {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (err) {
+    console.error("[KeepAlive] DB ping failed:", err);
+  }
+}
+
 /** Start background cron jobs */
 export function startSyncJobs() {
   // Sync season data every day at 06:00 UTC
@@ -282,6 +291,9 @@ export function startSyncJobs() {
 
   // Detect live sessions and start/stop polling every minute
   new CronJob("* * * * *", () => detectAndManageLiveSessions().catch(console.error), null, true, "UTC");
+
+  // Keep Neon DB awake — ping every 4 minutes to stay under the 5-min idle threshold
+  new CronJob("*/4 * * * *", () => keepAlive(), null, true, "UTC");
 
   console.log("[Cron] Sync jobs started");
 }

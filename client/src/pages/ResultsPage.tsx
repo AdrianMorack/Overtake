@@ -250,6 +250,48 @@ export function ResultsPage() {
               </div>
             </motion.div>
             )}
+
+            {/* Top Team */}
+            {results.topTeam && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+              className="grid-panel p-6 rounded-lg mb-6"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Trophy className="w-8 h-8 text-yellow-500" />
+                  <div>
+                    <div className="text-xs text-muted-foreground telemetry-text mb-1">TOP TEAM</div>
+                    <div className="text-theme-primary telemetry-text">{results.topTeam}</div>
+                    {myPrediction?.topTeam && myPrediction.topTeam !== results.topTeam && (
+                      <div className="text-xs text-muted-foreground">You picked: {myPrediction.topTeam}</div>
+                    )}
+                  </div>
+                </div>
+                {myPrediction?.topTeam && (
+                  <div className="flex items-center gap-3">
+                    {myPrediction.topTeam === results.topTeam ? (
+                      <>
+                        <CheckCircle2 className="w-6 h-6 text-green-500" />
+                        {(breakdown as Record<string, number>)["topTeam"] > 0 && (
+                          <div className="text-right">
+                            <div className="text-xs text-muted-foreground">Points</div>
+                            <div className="text-lg text-green-500 telemetry-text">
+                              +{(breakdown as Record<string, number>)["topTeam"]}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <XCircle className="w-6 h-6 text-red-500" />
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+            )}
           </>
         ) : (
           <div className="grid-panel p-6 rounded-lg mb-6 text-center text-muted-foreground">
@@ -280,6 +322,7 @@ export function ResultsPage() {
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R2</th>
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R3</th>
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
                     <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>
                   </tr>
                 </thead>
@@ -315,13 +358,14 @@ export function ResultsPage() {
                           <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceSecond, results?.raceSecond)}`}>{p.raceSecond}</td>
                           <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceThird, results?.raceThird)}`}>{p.raceThird}</td>
                           <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.fastestLap, results?.fastestLap)}`}>{p.fastestLap}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.topTeam, results?.topTeam)}`}>{p.topTeam}</td>
                           <td className="px-3 py-3 text-right">
                             <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints}</span>
                           </td>
                         </tr>
                         {isExpanded && (
                           <tr key={`${p.id}-detail`} className="bg-muted/20">
-                            <td colSpan={9} className="px-4 py-4">
+                            <td colSpan={10} className="px-4 py-4">
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                                 {[
                                   { label: "Quali P1", picked: p.qualiFirst, official: results?.qualiFirst, key: "qualiFirst" },

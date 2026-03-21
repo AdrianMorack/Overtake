@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Trophy, Crown, Users as UsersIcon, Eye, EyeOff, Check, X } from "lucide-react";
+import { ArrowLeft, Trophy, Crown, Users as UsersIcon, Eye, EyeOff, Check, X, ChevronDown, ChevronUp, CheckCircle2, XCircle } from "lucide-react";
 import { TEAM_COLORS } from "./LiveRacePage";
 import { api } from "../api/client";
 import { LeaderboardEntry, RaceWeekend, Prediction, Grid } from "../types";
@@ -16,6 +16,10 @@ export function LeaderboardPage() {
   const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [myPredictions, setMyPredictions] = useState<Prediction[]>([]);
   const [actionUserId, setActionUserId] = useState<string | null>(null);
+  const [viewPicksRaceId, setViewPicksRaceId] = useState<string | null>(null);
+  const [allPredictions, setAllPredictions] = useState<Prediction[]>([]);
+  const [viewPicksLoading, setViewPicksLoading] = useState(false);
+  const [expandedPickUser, setExpandedPickUser] = useState<string | null>(null);
 
   const handleApprove = async (userId: string) => {
     if (!gridId) return;
@@ -51,6 +55,27 @@ export function LeaderboardPage() {
     api.getMyPredictions(gridId).then(setMyPredictions).catch(console.error);
   };
 
+  const handleViewPicks = async (raceId: string) => {
+    if (viewPicksRaceId === raceId) {
+      setViewPicksRaceId(null);
+      setAllPredictions([]);
+      setExpandedPickUser(null);
+      return;
+    }
+    if (!gridId) return;
+    setViewPicksRaceId(raceId);
+    setExpandedPickUser(null);
+    setViewPicksLoading(true);
+    try {
+      const preds = await api.getRacePredictions(raceId, gridId);
+      setAllPredictions(preds);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setViewPicksLoading(false);
+    }
+  };
+
   useEffect(() => {
     setGrid(null);
     setEntries([]);
@@ -67,6 +92,8 @@ export function LeaderboardPage() {
   const activeCount = grid?.memberships?.filter((m) => m.status === "ACTIVE").length ?? 0;
   const pendingCount = grid?.memberships?.filter((m) => m.status === "PENDING").length ?? 0;
   const [codeVisible, setCodeVisible] = useState(false);
+  const viewPicksRace = viewPicksRaceId ? races.find((r) => r.id === viewPicksRaceId) ?? null : null;
+  const viewPicksResults = viewPicksRace?.results ?? null;
 
   return (
     <div className="container mx-auto px-4 py-6 pb-24 md:pb-6">
@@ -133,6 +160,144 @@ export function LeaderboardPage() {
             </div>
           </motion.div>
         )}
+
+        {/* All Picks Panel */}
+        {viewPicksRaceId && (() => {
+          const matchCell = (picked: string, official: string | null | undefined) => {
+            if (!official) return "text-muted-foreground";
+            return picked === official ? "text-green-500" : "text-red-400";
+          };
+          return (
+            <motion.div
+              key={viewPicksRaceId}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid-panel rounded-lg overflow-hidden mb-6"
+            >
+              <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                <h2>All Picks — {viewPicksRace?.raceName}</h2>
+                <button
+                  onClick={() => { setViewPicksRaceId(null); setAllPredictions([]); setExpandedPickUser(null); }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {viewPicksLoading ? (
+                <div className="p-8 text-center text-muted-foreground text-sm animate-pulse telemetry-text">LOADING…</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/20 border-b border-border">
+                      <tr>
+                        <th className="px-3 py-3 text-left text-xs telemetry-text text-muted-foreground">PLAYER</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q1</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q2</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q3</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R1</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R2</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R3</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
+                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
+                        <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allPredictions
+                        .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
+                        .map((p) => {
+                          const isExpanded = expandedPickUser === p.id;
+                          const pBreakdown = (p.breakdown ?? {}) as Record<string, number>;
+                          return (
+                            <>
+                              <tr
+                                key={p.id}
+                                onClick={() => setExpandedPickUser(isExpanded ? null : p.id)}
+                                className={`border-b border-border hover:bg-muted/30 transition-colors cursor-pointer ${p.userId === user?.id ? "bg-theme-primary/10" : ""}`}
+                              >
+                                <td className="px-3 py-3 font-medium">
+                                  <div className="flex items-center gap-2">
+                                    {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                    {p.user?.username ?? "—"}
+                                  </div>
+                                </td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiFirst, viewPicksResults?.qualiFirst)}`}>{p.qualiFirst}</td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiSecond, viewPicksResults?.qualiSecond)}`}>{p.qualiSecond}</td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiThird, viewPicksResults?.qualiThird)}`}>{p.qualiThird}</td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceFirst, viewPicksResults?.raceFirst)}`}>{p.raceFirst}</td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceSecond, viewPicksResults?.raceSecond)}`}>{p.raceSecond}</td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceThird, viewPicksResults?.raceThird)}`}>{p.raceThird}</td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.fastestLap, viewPicksResults?.fastestLap)}`}>{p.fastestLap}</td>
+                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.topTeam, viewPicksResults?.topTeam)}`}>{p.topTeam}</td>
+                                <td className="px-3 py-3 text-right">
+                                  <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints}</span>
+                                </td>
+                              </tr>
+                              {isExpanded && (
+                                <tr key={`${p.id}-detail`} className="bg-muted/20">
+                                  <td colSpan={10} className="px-4 py-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                      {[
+                                        { label: "Quali P1", picked: p.qualiFirst, official: viewPicksResults?.qualiFirst, key: "qualiFirst" },
+                                        { label: "Quali P2", picked: p.qualiSecond, official: viewPicksResults?.qualiSecond, key: "qualiSecond" },
+                                        { label: "Quali P3", picked: p.qualiThird, official: viewPicksResults?.qualiThird, key: "qualiThird" },
+                                        { label: "Race P1", picked: p.raceFirst, official: viewPicksResults?.raceFirst, key: "raceFirst" },
+                                        { label: "Race P2", picked: p.raceSecond, official: viewPicksResults?.raceSecond, key: "raceSecond" },
+                                        { label: "Race P3", picked: p.raceThird, official: viewPicksResults?.raceThird, key: "raceThird" },
+                                        { label: "Fastest Lap", picked: p.fastestLap, official: viewPicksResults?.fastestLap, key: "fastestLap" },
+                                        { label: "Top Team", picked: p.topTeam, official: viewPicksResults?.topTeam, key: "topTeam" },
+                                      ].map((item) => {
+                                        const hasOfficial = item.official != null && item.official !== "";
+                                        const correct = hasOfficial && item.picked === item.official;
+                                        const pts = pBreakdown[item.key] ?? 0;
+                                        return (
+                                          <div key={item.key} className="flex items-center justify-between p-2 rounded bg-muted/40">
+                                            <div>
+                                              <div className="text-[10px] text-muted-foreground telemetry-text">{item.label}</div>
+                                              <div className="telemetry-text">{item.picked}</div>
+                                              {hasOfficial && item.picked !== item.official && (
+                                                <div className="text-[10px] text-muted-foreground">Actual: {item.official}</div>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              {hasOfficial ? (
+                                                correct ? (
+                                                  <><CheckCircle2 className="w-4 h-4 text-green-500" />{pts > 0 && <span className="text-green-500 telemetry-text text-xs">+{pts}</span>}</>
+                                                ) : (
+                                                  <><XCircle className="w-4 h-4 text-red-500" />{pts > 0 && <span className="text-yellow-500 telemetry-text text-xs">+{pts}</span>}</>
+                                                )
+                                              ) : (
+                                                <span className="text-[10px] text-muted-foreground telemetry-text">PENDING</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    <div className="mt-3 text-right">
+                                      <span className="text-muted-foreground text-xs">Total: </span>
+                                      <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints} pts</span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
+                        })}
+                      {allPredictions.length === 0 && !viewPicksLoading && (
+                        <tr>
+                          <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                            No predictions submitted yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </motion.div>
+          );
+        })()}
 
         {/* Leaderboard Table */}
         <motion.div
@@ -342,15 +507,18 @@ export function LeaderboardPage() {
                           </motion.button>
                         </Link>
                       )}
-                      {isLocked && hasPrediction && (
-                        <Link to={`/grids/${gridId}/race/${r.id}/results`}>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            className="px-4 py-2 bg-muted hover:bg-muted/80 text-muted-foreground rounded telemetry-text text-sm"
-                          >
-                            ALL PICKS
-                          </motion.button>
-                        </Link>
+                      {isLocked && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          onClick={() => handleViewPicks(r.id)}
+                          className={`px-4 py-2 rounded telemetry-text text-sm ${
+                            viewPicksRaceId === r.id
+                              ? "bg-theme-primary/20 border border-theme-primary text-theme-primary"
+                              : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                          }`}
+                        >
+                          {viewPicksRaceId === r.id ? "HIDE" : "VIEW"}
+                        </motion.button>
                       )}
                       {!isLocked && (
                         <Link to={`/grids/${gridId}/race/${r.id}/predict`}>

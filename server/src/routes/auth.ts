@@ -63,6 +63,15 @@ router.post("/logout", authenticate, validate(refreshSchema), async (req: Reques
   res.json({ message: "Logged out" });
 });
 
+router.get("/me", authenticate, async (req: Request, res: Response) => {
+  try {
+    const user = await authService.getMe(req.user!.userId);
+    res.json({ user });
+  } catch (err: any) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
 const ALLOWED_TEAMS = ["ferrari", "mercedes", "redbull", "mclaren", "alpine", "astonmartin", "williams", "haas", "racingbulls", "cadillac", "audi"];
 
 router.patch("/me", authenticate, async (req: Request, res: Response) => {

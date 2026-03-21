@@ -29,22 +29,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
+        setLoading(false);
       } catch {
         localStorage.removeItem("user");
+        setLoading(false);
       }
+    } else if (localStorage.getItem("accessToken")) {
+      // Older session: fetch real user from server
+      api.getMe()
+        .then((res) => {
+          localStorage.setItem("user", JSON.stringify(res.user));
+          setUser(res.user);
+        })
+        .catch(() => api.clearTokens())
+        .finally(() => setLoading(false));
     } else {
-      // Fallback: decode from JWT (older sessions without stored user)
-      const stored = localStorage.getItem("accessToken");
-      if (stored) {
-        try {
-          const payload = JSON.parse(atob(stored.split(".")[1]));
-          setUser({ id: payload.userId, email: payload.email, username: payload.email });
-        } catch {
-          api.clearTokens();
-        }
-      }
+      setLoading(false);
     }
-    setLoading(false);
   }, [clearAndRedirect]);
 
   const login = async (email: string, password: string) => {

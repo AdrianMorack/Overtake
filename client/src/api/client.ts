@@ -102,6 +102,10 @@ class ApiClient {
     return this.request("/auth/logout", { method: "POST", body });
   }
 
+  getMe() {
+    return this.request<{ user: { id: string; email: string; username: string; favoriteTeam?: string } }>("/auth/me");
+  }
+
   updateProfile(data: { favoriteTeam: string }) {
     return this.request<{ user: { favoriteTeam: string } }>("/auth/me", {
       method: "PATCH",

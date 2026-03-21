@@ -19,6 +19,14 @@ function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+export async function getMe(userId: string) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { id: true, email: true, username: true, favoriteTeam: true },
+  });
+  return user;
+}
+
 export async function updateProfile(userId: string, favoriteTeam: string) {
   const user = await prisma.user.update({
     where: { id: userId },

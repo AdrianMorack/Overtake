@@ -432,9 +432,9 @@ export function LeaderboardPage() {
                                         { label: "Q1", val: p.qualiFirst, off: results?.qualiFirst },
                                         { label: "Q2", val: p.qualiSecond, off: results?.qualiSecond },
                                         { label: "Q3", val: p.qualiThird, off: results?.qualiThird },
-                                        { label: "R1", val: p.raceFirst, off: results?.raceFirst },
-                                        { label: "R2", val: p.raceSecond, off: results?.raceSecond },
-                                        { label: "R3", val: p.raceThird, off: results?.raceThird },
+                                        { label: "P1", val: p.raceFirst, off: results?.raceFirst },
+                                        { label: "P2", val: p.raceSecond, off: results?.raceSecond },
+                                        { label: "P3", val: p.raceThird, off: results?.raceThird },
                                         { label: "FL", val: p.fastestLap, off: results?.fastestLap },
                                         { label: "TT", val: p.topTeam, off: results?.topTeam },
                                       ].map(({ label, val, off }) => (
@@ -459,9 +459,9 @@ export function LeaderboardPage() {
                                       <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q1</th>
                                       <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q2</th>
                                       <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q3</th>
-                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R1</th>
-                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R2</th>
-                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R3</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P1</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P2</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P3</th>
                                       <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
                                       <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
                                       <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>

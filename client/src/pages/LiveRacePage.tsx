@@ -11,17 +11,17 @@ import {
 
 // ─── Team Colours ───────────────────────────────────────────────────────────────
 export const TEAM_COLORS: Record<string, { primary: string; secondary: string }> = {
-  ferrari:        { primary: "#f70d1a", secondary: "#ffffff" },
+  ferrari:        { primary: "#930007", secondary: "#ffffff" },
   mercedes:       { primary: "#00d2be", secondary: "#505050" },
   redbull:        { primary: "#151cdb", secondary: "#D81F26" },
   mclaren:        { primary: "#DC6D22", secondary: "#e1e1e1" },
   alpine:         { primary: "#176FB5", secondary: "#ED79B6" },
   astonmartin:    { primary: "#15674C", secondary: "#262626" },
   williams:       { primary: "#0B2BE5", secondary: "#B0B0B0" },
-  haas:           { primary: "#dedede", secondary: "#E11412" },
+  haas:           { primary: "#dedede", secondary: "#b20906" },
   racingbulls:    { primary: "#2459B3", secondary: "#d4d4d4" },
   cadillac:       { primary: "#C8A951", secondary: "#1A1A1A" },
-  audi:           { primary: "#F82724", secondary: "#D4D0CF" },
+  audi:           { primary: "#8b8b8b", secondary: "#ff0400" },
 };
 
 function hexToRgb(hex: string): string {

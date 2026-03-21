@@ -20,6 +20,7 @@ export interface Grid {
   code: string;
   ownerId: string;
   season: number;
+  showPicksBeforeLock: boolean;
   memberStatus?: "ACTIVE" | "PENDING";
   memberships?: GridMembership[];
 }

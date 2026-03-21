@@ -142,7 +142,7 @@ export function LeaderboardPage() {
               </div>
             </div>
             {isOwner && grid && (
-              <GridAdminMenu gridId={grid.id} gridName={grid.name} onUpdate={loadData} />
+              <GridAdminMenu gridId={grid.id} gridName={grid.name} showPicksBeforeLock={grid.showPicksBeforeLock ?? false} onUpdate={loadData} />
             )}
           </div>
         </div>
@@ -507,7 +507,7 @@ export function LeaderboardPage() {
                           </motion.button>
                         </Link>
                       )}
-                      {isLocked && (
+                      {(isLocked || grid?.showPicksBeforeLock) && (
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           onClick={() => handleViewPicks(r.id)}

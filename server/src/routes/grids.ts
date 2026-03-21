@@ -13,7 +13,8 @@ const createGridSchema = z.object({
 });
 
 const updateGridSchema = z.object({
-  name: z.string().min(2).max(50),
+  name: z.string().min(2).max(50).optional(),
+  showPicksBeforeLock: z.boolean().optional(),
 });
 
 const joinGridSchema = z.object({

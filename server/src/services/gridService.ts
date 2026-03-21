@@ -74,7 +74,7 @@ export async function getGrid(gridId: string) {
   return grid;
 }
 
-export async function updateGrid(gridId: string, data: { name?: string }, userId: string) {
+export async function updateGrid(gridId: string, data: { name?: string; showPicksBeforeLock?: boolean }, userId: string) {
   const grid = await prisma.grid.findUnique({ where: { id: gridId } });
   if (!grid) throw new Error("Grid not found");
   if (grid.ownerId !== userId) throw new Error("Only the grid owner can update the grid");

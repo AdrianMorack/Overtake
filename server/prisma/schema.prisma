@@ -43,12 +43,13 @@ model RefreshToken {
 // ─── Grids ───────────────────────────────────────────────────────────────────
 
 model Grid {
-  id        String   @id @default(cuid())
-  name      String
-  code      String   @unique @db.Char(6)
-  ownerId   String   @map("owner_id")
-  season    Int      @default(2025)
-  createdAt DateTime @default(now()) @map("created_at")
+  id                  String   @id @default(cuid())
+  name                String
+  code                String   @unique @db.Char(6)
+  ownerId             String   @map("owner_id")
+  season              Int      @default(2025)
+  showPicksBeforeLock Boolean  @default(false) @map("show_picks_before_lock")
+  createdAt           DateTime @default(now()) @map("created_at")
 
   memberships GridMembership[]
 

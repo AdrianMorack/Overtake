@@ -2,16 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { MoreVertical, Edit2, Users as UsersIcon, Trash2, X, AlertTriangle, Check } from "lucide-react";
+import { MoreVertical, Edit2, Users as UsersIcon, Trash2, X, AlertTriangle, Check, Eye } from "lucide-react";
 import { api } from "../../api/client";
 
 interface GridAdminMenuProps {
   gridId: string;
   gridName: string;
+  showPicksBeforeLock: boolean;
   onUpdate: () => void;
 }
 
-export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, onUpdate }) => {
+export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, showPicksBeforeLock, onUpdate }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -20,9 +21,23 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
   const [newName, setNewName] = useState(gridName);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
+  const [picksLoading, setPicksLoading] = useState(false);
   const [error, setError] = useState("");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleTogglePicksBeforeLock = async () => {
+    setPicksLoading(true);
+    try {
+      await api.updateGrid(gridId, { showPicksBeforeLock: !showPicksBeforeLock });
+      onUpdate();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPicksLoading(false);
+      setMenuOpen(false);
+    }
+  };
 
   const handleRename = async () => {
     if (!newName.trim() || newName === gridName) {
@@ -104,6 +119,19 @@ export const GridAdminMenu: React.FC<GridAdminMenuProps> = ({ gridId, gridName, 
               >
                 <UsersIcon className="w-4 h-4 text-muted-foreground" />
                 <span>Manage Members</span>
+              </button>
+              <button
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-left text-sm"
+                onClick={handleTogglePicksBeforeLock}
+                disabled={picksLoading}
+              >
+                <div className="flex items-center gap-3">
+                  <Eye className="w-4 h-4 text-muted-foreground" />
+                  <span>Show Picks Early</span>
+                </div>
+                <div className={`w-8 h-4 rounded-full transition-colors relative flex-shrink-0 ${showPicksBeforeLock ? "bg-theme-primary" : "bg-muted-foreground/30"}`}>
+                  <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all ${showPicksBeforeLock ? "left-4" : "left-0.5"}`} />
+                </div>
               </button>
               <div className="border-t border-border" />
               <button

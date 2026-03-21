@@ -136,7 +136,7 @@ class ApiClient {
     return this.request<Grid>(`/grids/${encodeURIComponent(gridId)}`);
   }
 
-  updateGrid(gridId: string, data: { name: string }) {
+  updateGrid(gridId: string, data: { name?: string; showPicksBeforeLock?: boolean }) {
     return this.request<Grid>(`/grids/${encodeURIComponent(gridId)}`, {
       method: "PATCH",
       body: JSON.stringify(data),

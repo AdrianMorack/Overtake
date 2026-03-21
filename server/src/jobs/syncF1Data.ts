@@ -62,8 +62,17 @@ export async function syncSeasonData(year: number = new Date().getFullYear()) {
   }
 
   // 3. Sync drivers + teams from the first race session
+  // FastF1 session loads can hit upstream rate limits — skip if unavailable,
+  // the schedule sync above is more important and already completed.
   if (races.length > 0) {
-    const drivers = await FastF1.getSessionDrivers(races[0].session_key);
+    let drivers: Awaited<ReturnType<typeof FastF1.getSessionDrivers>>;
+    try {
+      drivers = await FastF1.getSessionDrivers(races[0].session_key);
+    } catch (err) {
+      console.warn(`[Sync] Could not load drivers from FastF1 (will skip driver/team sync): ${err}`);
+      console.log(`[Sync] Season data sync complete (schedule only — driver sync skipped)`);
+      return;
+    }
     const teamMap = new Map<string, { name: string; color: string }>();
 
     for (const d of drivers) {

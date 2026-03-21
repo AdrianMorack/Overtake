@@ -318,9 +318,9 @@ export function ResultsPage() {
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q1</th>
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q2</th>
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q3</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R1</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R2</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R3</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P1</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P2</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P3</th>
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
                     <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
                     <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>

@@ -25,15 +25,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api.loadStoredTokens();
     api.onAuthError(clearAndRedirect);
 
-    // If we have a stored token, try to validate by fetching grids (lightweight)
-    const stored = localStorage.getItem("accessToken");
-    if (stored) {
-      // Decode user from token (JWT payload)
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
       try {
-        const payload = JSON.parse(atob(stored.split(".")[1]));
-        setUser({ id: payload.userId, email: payload.email, username: payload.email });
+        setUser(JSON.parse(storedUser));
       } catch {
-        api.clearTokens();
+        localStorage.removeItem("user");
+      }
+    } else {
+      // Fallback: decode from JWT (older sessions without stored user)
+      const stored = localStorage.getItem("accessToken");
+      if (stored) {
+        try {
+          const payload = JSON.parse(atob(stored.split(".")[1]));
+          setUser({ id: payload.userId, email: payload.email, username: payload.email });
+        } catch {
+          api.clearTokens();
+        }
       }
     }
     setLoading(false);
@@ -42,17 +50,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     const res = await api.login(email, password);
     api.setTokens(res.accessToken, res.refreshToken);
+    localStorage.setItem("user", JSON.stringify(res.user));
     setUser(res.user);
   };
 
   const register = async (email: string, username: string, password: string) => {
     const res = await api.register(email, username, password);
     api.setTokens(res.accessToken, res.refreshToken);
+    localStorage.setItem("user", JSON.stringify(res.user));
     setUser(res.user);
   };
 
   const logout = () => {
     api.logout().catch(() => {});
+    localStorage.removeItem("user");
     clearAndRedirect();
   };
 

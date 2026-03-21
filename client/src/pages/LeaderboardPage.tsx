@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Trophy, Crown, Users as UsersIcon, Eye, EyeOff, Check, X, ChevronDown, ChevronUp, CheckCircle2, XCircle } from "lucide-react";
 import { TEAM_COLORS } from "./LiveRacePage";
 import { api } from "../api/client";
@@ -92,8 +92,6 @@ export function LeaderboardPage() {
   const activeCount = grid?.memberships?.filter((m) => m.status === "ACTIVE").length ?? 0;
   const pendingCount = grid?.memberships?.filter((m) => m.status === "PENDING").length ?? 0;
   const [codeVisible, setCodeVisible] = useState(false);
-  const viewPicksRace = viewPicksRaceId ? races.find((r) => r.id === viewPicksRaceId) ?? null : null;
-  const viewPicksResults = viewPicksRace?.results ?? null;
 
   return (
     <div className="container mx-auto px-4 py-6 pb-24 md:pb-6">
@@ -160,144 +158,6 @@ export function LeaderboardPage() {
             </div>
           </motion.div>
         )}
-
-        {/* All Picks Panel */}
-        {viewPicksRaceId && (() => {
-          const matchCell = (picked: string, official: string | null | undefined) => {
-            if (!official) return "text-muted-foreground";
-            return picked === official ? "text-green-500" : "text-red-400";
-          };
-          return (
-            <motion.div
-              key={viewPicksRaceId}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid-panel rounded-lg overflow-hidden mb-6"
-            >
-              <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-                <h2>All Picks — {viewPicksRace?.raceName}</h2>
-                <button
-                  onClick={() => { setViewPicksRaceId(null); setAllPredictions([]); setExpandedPickUser(null); }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              {viewPicksLoading ? (
-                <div className="p-8 text-center text-muted-foreground text-sm animate-pulse telemetry-text">LOADING…</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/20 border-b border-border">
-                      <tr>
-                        <th className="px-3 py-3 text-left text-xs telemetry-text text-muted-foreground">PLAYER</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q1</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q2</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q3</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R1</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R2</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R3</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
-                        <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
-                        <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {allPredictions
-                        .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
-                        .map((p) => {
-                          const isExpanded = expandedPickUser === p.id;
-                          const pBreakdown = (p.breakdown ?? {}) as Record<string, number>;
-                          return (
-                            <>
-                              <tr
-                                key={p.id}
-                                onClick={() => setExpandedPickUser(isExpanded ? null : p.id)}
-                                className={`border-b border-border hover:bg-muted/30 transition-colors cursor-pointer ${p.userId === user?.id ? "bg-theme-primary/10" : ""}`}
-                              >
-                                <td className="px-3 py-3 font-medium">
-                                  <div className="flex items-center gap-2">
-                                    {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                    {p.user?.username ?? "—"}
-                                  </div>
-                                </td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiFirst, viewPicksResults?.qualiFirst)}`}>{p.qualiFirst}</td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiSecond, viewPicksResults?.qualiSecond)}`}>{p.qualiSecond}</td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiThird, viewPicksResults?.qualiThird)}`}>{p.qualiThird}</td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceFirst, viewPicksResults?.raceFirst)}`}>{p.raceFirst}</td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceSecond, viewPicksResults?.raceSecond)}`}>{p.raceSecond}</td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceThird, viewPicksResults?.raceThird)}`}>{p.raceThird}</td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.fastestLap, viewPicksResults?.fastestLap)}`}>{p.fastestLap}</td>
-                                <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.topTeam, viewPicksResults?.topTeam)}`}>{p.topTeam}</td>
-                                <td className="px-3 py-3 text-right">
-                                  <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints}</span>
-                                </td>
-                              </tr>
-                              {isExpanded && (
-                                <tr key={`${p.id}-detail`} className="bg-muted/20">
-                                  <td colSpan={10} className="px-4 py-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                                      {[
-                                        { label: "Quali P1", picked: p.qualiFirst, official: viewPicksResults?.qualiFirst, key: "qualiFirst" },
-                                        { label: "Quali P2", picked: p.qualiSecond, official: viewPicksResults?.qualiSecond, key: "qualiSecond" },
-                                        { label: "Quali P3", picked: p.qualiThird, official: viewPicksResults?.qualiThird, key: "qualiThird" },
-                                        { label: "Race P1", picked: p.raceFirst, official: viewPicksResults?.raceFirst, key: "raceFirst" },
-                                        { label: "Race P2", picked: p.raceSecond, official: viewPicksResults?.raceSecond, key: "raceSecond" },
-                                        { label: "Race P3", picked: p.raceThird, official: viewPicksResults?.raceThird, key: "raceThird" },
-                                        { label: "Fastest Lap", picked: p.fastestLap, official: viewPicksResults?.fastestLap, key: "fastestLap" },
-                                        { label: "Top Team", picked: p.topTeam, official: viewPicksResults?.topTeam, key: "topTeam" },
-                                      ].map((item) => {
-                                        const hasOfficial = item.official != null && item.official !== "";
-                                        const correct = hasOfficial && item.picked === item.official;
-                                        const pts = pBreakdown[item.key] ?? 0;
-                                        return (
-                                          <div key={item.key} className="flex items-center justify-between p-2 rounded bg-muted/40">
-                                            <div>
-                                              <div className="text-[10px] text-muted-foreground telemetry-text">{item.label}</div>
-                                              <div className="telemetry-text">{item.picked}</div>
-                                              {hasOfficial && item.picked !== item.official && (
-                                                <div className="text-[10px] text-muted-foreground">Actual: {item.official}</div>
-                                              )}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                              {hasOfficial ? (
-                                                correct ? (
-                                                  <><CheckCircle2 className="w-4 h-4 text-green-500" />{pts > 0 && <span className="text-green-500 telemetry-text text-xs">+{pts}</span>}</>
-                                                ) : (
-                                                  <><XCircle className="w-4 h-4 text-red-500" />{pts > 0 && <span className="text-yellow-500 telemetry-text text-xs">+{pts}</span>}</>
-                                                )
-                                              ) : (
-                                                <span className="text-[10px] text-muted-foreground telemetry-text">PENDING</span>
-                                              )}
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                    <div className="mt-3 text-right">
-                                      <span className="text-muted-foreground text-xs">Total: </span>
-                                      <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints} pts</span>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </>
-                          );
-                        })}
-                      {allPredictions.length === 0 && !viewPicksLoading && (
-                        <tr>
-                          <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">
-                            No predictions submitted yet.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </motion.div>
-          );
-        })()}
 
         {/* Leaderboard Table */}
         <motion.div
@@ -469,73 +329,227 @@ export function LeaderboardPage() {
               );
               const isLocked = new Date() > new Date(r.predictionsLock);
               const isQualiDone = r.status === "QUALI_COMPLETE";
+              const isExpanded = viewPicksRaceId === r.id;
+              const results = r.results;
+              const matchCell = (picked: string, official: string | null | undefined) => {
+                if (!official) return "text-muted-foreground";
+                return picked === official ? "text-green-500" : "text-red-400";
+              };
               return (
-                <div key={r.id} className="p-4 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs text-muted-foreground telemetry-text">ROUND {r.round}</span>
-                        {isQualiDone ? (
-                          <span className="px-2 py-0.5 bg-purple-600/20 border border-purple-600 rounded text-xs text-purple-400 telemetry-text">
-                            QUALI DONE
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 bg-blue-600/20 border border-blue-600 rounded text-xs text-blue-500 telemetry-text">
-                            UPCOMING
-                          </span>
-                        )}
-                        {hasPrediction && (
-                          <span className="px-2 py-0.5 bg-green-600/20 border border-green-600 rounded text-xs text-green-500 telemetry-text">
-                            PREDICTED
-                          </span>
-                        )}
+                <div key={r.id}>
+                  <div className="p-4 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-muted-foreground telemetry-text">ROUND {r.round}</span>
+                          {isQualiDone ? (
+                            <span className="px-2 py-0.5 bg-purple-600/20 border border-purple-600 rounded text-xs text-purple-400 telemetry-text">
+                              QUALI DONE
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-blue-600/20 border border-blue-600 rounded text-xs text-blue-500 telemetry-text">
+                              UPCOMING
+                            </span>
+                          )}
+                          {hasPrediction && (
+                            <span className="px-2 py-0.5 bg-green-600/20 border border-green-600 rounded text-xs text-green-500 telemetry-text">
+                              PREDICTED
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="mb-1">{r.raceName}</h4>
+                        <p className="text-sm text-muted-foreground">{r.circuitName}, {r.country}</p>
+                        <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
+                          <span>Race: {new Date(r.raceDate).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                        </div>
                       </div>
-                      <h4 className="mb-1">{r.raceName}</h4>
-                      <p className="text-sm text-muted-foreground">{r.circuitName}, {r.country}</p>
-                      <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                        <span>Race: {new Date(r.raceDate).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isLocked && hasPrediction && (
-                        <Link to={`/grids/${gridId}/race/${r.id}/predict`}>
+                      <div className="flex items-center gap-2">
+                        {isLocked && hasPrediction && (
+                          <Link to={`/grids/${gridId}/race/${r.id}/predict`}>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              className="px-4 py-2 bg-purple-600/20 border border-purple-600 text-purple-400 hover:bg-purple-600/30 rounded telemetry-text text-sm"
+                            >
+                              VIEW PICKS
+                            </motion.button>
+                          </Link>
+                        )}
+                        {(isLocked || grid?.showPicksBeforeLock) && (
                           <motion.button
                             whileHover={{ scale: 1.05 }}
-                            className="px-4 py-2 bg-purple-600/20 border border-purple-600 text-purple-400 hover:bg-purple-600/30 rounded telemetry-text text-sm"
-                          >
-                            VIEW PICKS
-                          </motion.button>
-                        </Link>
-                      )}
-                      {(isLocked || grid?.showPicksBeforeLock) && (
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          onClick={() => handleViewPicks(r.id)}
-                          className={`px-4 py-2 rounded telemetry-text text-sm ${
-                            viewPicksRaceId === r.id
-                              ? "bg-theme-primary/20 border border-theme-primary text-theme-primary"
-                              : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                          }`}
-                        >
-                          {viewPicksRaceId === r.id ? "HIDE" : "VIEW"}
-                        </motion.button>
-                      )}
-                      {!isLocked && (
-                        <Link to={`/grids/${gridId}/race/${r.id}/predict`}>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
+                            onClick={() => handleViewPicks(r.id)}
                             className={`px-4 py-2 rounded telemetry-text text-sm ${
-                              hasPrediction
-                                ? "bg-green-600/20 border border-green-600 text-green-500 hover:bg-green-600/30"
-                                : "bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg"
+                              isExpanded
+                                ? "bg-theme-primary/20 border border-theme-primary text-theme-primary"
+                                : "bg-muted hover:bg-muted/80 text-muted-foreground"
                             }`}
                           >
-                            {hasPrediction ? "EDIT" : "PREDICT"}
+                            {isExpanded ? "HIDE" : "VIEW"}
                           </motion.button>
-                        </Link>
-                      )}
+                        )}
+                        {!isLocked && (
+                          <Link to={`/grids/${gridId}/race/${r.id}/predict`}>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              className={`px-4 py-2 rounded telemetry-text text-sm ${
+                                hasPrediction
+                                  ? "bg-green-600/20 border border-green-600 text-green-500 hover:bg-green-600/30"
+                                  : "bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg"
+                              }`}
+                            >
+                              {hasPrediction ? "EDIT" : "PREDICT"}
+                            </motion.button>
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        key="picks-panel"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-border bg-muted/10">
+                          {viewPicksLoading ? (
+                            <div className="p-6 text-center text-muted-foreground text-sm animate-pulse telemetry-text">LOADING…</div>
+                          ) : (
+                            <>
+                              {/* Mobile: stacked player cards */}
+                              <div className="md:hidden divide-y divide-border/50">
+                                {[...allPredictions].sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0)).map((p) => (
+                                  <div key={p.id} className={`p-3 ${p.userId === user?.id ? "bg-theme-primary/10" : ""}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-medium text-sm">{p.user?.username ?? "—"}</span>
+                                      <span className="text-theme-primary telemetry-text font-bold text-sm">{p.totalPoints} pts</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {[
+                                        { label: "Q1", val: p.qualiFirst, off: results?.qualiFirst },
+                                        { label: "Q2", val: p.qualiSecond, off: results?.qualiSecond },
+                                        { label: "Q3", val: p.qualiThird, off: results?.qualiThird },
+                                        { label: "R1", val: p.raceFirst, off: results?.raceFirst },
+                                        { label: "R2", val: p.raceSecond, off: results?.raceSecond },
+                                        { label: "R3", val: p.raceThird, off: results?.raceThird },
+                                        { label: "FL", val: p.fastestLap, off: results?.fastestLap },
+                                        { label: "TT", val: p.topTeam, off: results?.topTeam },
+                                      ].map(({ label, val, off }) => (
+                                        <div key={label} className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-xs">
+                                          <span className="text-muted-foreground">{label}</span>
+                                          <span className={off ? (val === off ? "text-green-500" : "text-red-400") : ""}>{val || "—"}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                                {allPredictions.length === 0 && (
+                                  <div className="p-6 text-center text-muted-foreground text-sm">No predictions yet.</div>
+                                )}
+                              </div>
+                              {/* Desktop: table */}
+                              <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-muted/20 border-b border-border">
+                                    <tr>
+                                      <th className="px-3 py-3 text-left text-xs telemetry-text text-muted-foreground">PLAYER</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q1</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q2</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q3</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R1</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R2</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">R3</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
+                                      <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
+                                      <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {[...allPredictions].sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0)).map((p) => {
+                                      const isRowExpanded = expandedPickUser === p.id;
+                                      const pBreakdown = (p.breakdown ?? {}) as Record<string, number>;
+                                      return (
+                                        <React.Fragment key={p.id}>
+                                          <tr
+                                            onClick={() => setExpandedPickUser(isRowExpanded ? null : p.id)}
+                                            className={`border-b border-border hover:bg-muted/30 transition-colors cursor-pointer ${p.userId === user?.id ? "bg-theme-primary/10" : ""}`}
+                                          >
+                                            <td className="px-3 py-3 font-medium">
+                                              <div className="flex items-center gap-2">
+                                                {isRowExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                {p.user?.username ?? "—"}
+                                              </div>
+                                            </td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiFirst, results?.qualiFirst)}`}>{p.qualiFirst}</td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiSecond, results?.qualiSecond)}`}>{p.qualiSecond}</td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiThird, results?.qualiThird)}`}>{p.qualiThird}</td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceFirst, results?.raceFirst)}`}>{p.raceFirst}</td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceSecond, results?.raceSecond)}`}>{p.raceSecond}</td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceThird, results?.raceThird)}`}>{p.raceThird}</td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.fastestLap, results?.fastestLap)}`}>{p.fastestLap}</td>
+                                            <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.topTeam, results?.topTeam)}`}>{p.topTeam}</td>
+                                            <td className="px-3 py-3 text-right">
+                                              <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints}</span>
+                                            </td>
+                                          </tr>
+                                          {isRowExpanded && (
+                                            <tr className="bg-muted/20">
+                                              <td colSpan={10} className="px-4 py-4">
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                                  {[
+                                                    { label: "Quali P1", picked: p.qualiFirst, official: results?.qualiFirst, key: "qualiFirst" },
+                                                    { label: "Quali P2", picked: p.qualiSecond, official: results?.qualiSecond, key: "qualiSecond" },
+                                                    { label: "Quali P3", picked: p.qualiThird, official: results?.qualiThird, key: "qualiThird" },
+                                                    { label: "Race P1", picked: p.raceFirst, official: results?.raceFirst, key: "raceFirst" },
+                                                    { label: "Race P2", picked: p.raceSecond, official: results?.raceSecond, key: "raceSecond" },
+                                                    { label: "Race P3", picked: p.raceThird, official: results?.raceThird, key: "raceThird" },
+                                                    { label: "Fastest Lap", picked: p.fastestLap, official: results?.fastestLap, key: "fastestLap" },
+                                                    { label: "Top Team", picked: p.topTeam, official: results?.topTeam, key: "topTeam" },
+                                                  ].map((item) => {
+                                                    const hasOfficial = item.official != null && item.official !== "";
+                                                    const correct = hasOfficial && item.picked === item.official;
+                                                    const pts = pBreakdown[item.key] ?? 0;
+                                                    return (
+                                                      <div key={item.key} className="flex items-center justify-between p-2 rounded bg-muted/40">
+                                                        <div>
+                                                          <div className="text-[10px] text-muted-foreground telemetry-text">{item.label}</div>
+                                                          <div className="telemetry-text text-xs">{item.picked}</div>
+                                                          {hasOfficial && item.picked !== item.official && (
+                                                            <div className="text-[10px] text-muted-foreground">→ {item.official}</div>
+                                                          )}
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                          {hasOfficial ? (
+                                                            correct
+                                                              ? <><CheckCircle2 className="w-4 h-4 text-green-500" />{pts > 0 && <span className="text-green-500 telemetry-text text-xs">+{pts}</span>}</>
+                                                              : <><XCircle className="w-4 h-4 text-red-500" />{pts > 0 && <span className="text-yellow-500 telemetry-text text-xs">+{pts}</span>}</>
+                                                          ) : <span className="text-[10px] text-muted-foreground telemetry-text">PENDING</span>}
+                                                        </div>
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </React.Fragment>
+                                      );
+                                    })}
+                                    {allPredictions.length === 0 && (
+                                      <tr><td colSpan={10} className="px-4 py-6 text-center text-muted-foreground text-sm">No predictions yet.</td></tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}

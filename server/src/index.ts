@@ -54,7 +54,7 @@ app.use(errorHandler);
 
 // ─── Start ──────────────────────────────────────────────────────────────────
 app.listen(env.port, () => {
-  console.log(`🏁 Overtake server running on port ${env.port} [${env.nodeEnv}]`);
+  console.log(`🏁 OvertakeHQ server running on port ${env.port} [${env.nodeEnv}]`);
 
   // Start background sync jobs (results check, live detection)
   startSyncJobs();

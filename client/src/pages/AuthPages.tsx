@@ -41,7 +41,7 @@ export function LoginPage() {
             <div className="mb-4">
               <Flag className="w-16 h-16 text-theme-primary" />
             </div>
-            <h1 className="text-3xl mb-2">OVERTAKE</h1>
+            <h1 className="text-3xl mb-2">OVERTAKEHQ</h1>
             <p className="text-sm text-muted-foreground telemetry-text">F1 PREDICTION PLATFORM</p>
           </div>
 
@@ -54,7 +54,7 @@ export function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="driver@overtake.com"
+                  placeholder="driver@overtakehq.com"
                   className="w-full pl-11 pr-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:border-theme-primary transition-colors"
                   required
                 />
@@ -142,7 +142,7 @@ export function RegisterPage() {
             <div className="mb-4">
               <Flag className="w-16 h-16 text-theme-primary" />
             </div>
-            <h1 className="text-3xl mb-2">OVERTAKE</h1>
+            <h1 className="text-3xl mb-2">OVERTAKEHQ</h1>
             <p className="text-sm text-muted-foreground telemetry-text">F1 PREDICTION PLATFORM</p>
           </div>
 
@@ -155,7 +155,7 @@ export function RegisterPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="driver@overtake.com"
+                  placeholder="driver@overtakehq.com"
                   className="w-full pl-11 pr-4 py-3 bg-card border border-border rounded-lg focus:outline-none focus:border-theme-primary transition-colors"
                   required
                 />

@@ -1,4 +1,4 @@
-# Overtake — Deployment & Automation Guide
+# OvertakeHQ — Deployment & Automation Guide
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@
 
 ## Part 1: Database (Neon)
 
-1. Go to [neon.tech](https://neon.tech) → Create project "Overtake"
+1. Go to [neon.tech](https://neon.tech) → Create project "OvertakeHQ"
 2. Copy the **pooled connection string** (with `?pgbouncer=true`)
 3. Save for next step
 
@@ -21,24 +21,24 @@
 
 1. **New Web Service** → Connect GitHub repo
 2. **Settings:**
-   - Name: `overtake-server`
+   - Name: `overtakehq-server`
    - Root Directory: `server`
    - Runtime: `Docker`
    - Plan: **Starter ($7/mo)** recommended for live races
 
 3. **Environment Variables:**
    ```bash
-   DATABASE_URL=postgresql://...@neon.tech/overtake?sslmode=require&pgbouncer=true
+   DATABASE_URL=postgresql://...@neon.tech/overtakehq?sslmode=require&pgbouncer=true
    JWT_SECRET=<run: openssl rand -hex 64>
    JWT_REFRESH_SECRET=<run: openssl rand -hex 64>
    NODE_ENV=production
-   CORS_ORIGIN=https://overtake.vercel.app  # Update after Vercel deploy
+   CORS_ORIGIN=https://overtakehq.vercel.app  # Update after Vercel deploy
    PORT=4000
-   FASTF1_BASE_URL=https://overtake-fastf1.onrender.com  # Update after next step
+   FASTF1_BASE_URL=https://overtakehq-fastf1.onrender.com  # Update after next step
    ADMIN_USER_IDS=  # Leave empty, add after first user registration
    ```
 
-4. Deploy → Note URL: `https://overtake-server.onrender.com`
+4. Deploy → Note URL: `https://overtakehq-server.onrender.com`
 
 ---
 
@@ -46,17 +46,17 @@
 
 1. **New Web Service** → Same repo
 2. **Settings:**
-   - Name: `overtake-fastf1`
+   - Name: `overtakehq-fastf1`
    - Root Directory: `fastf1-service`
    - Runtime: `Docker`
    - Plan: **Starter ($7/mo)** recommended
 
 3. **Environment Variables:**
    ```bash
-   ALLOWED_ORIGINS=https://overtake-server.onrender.com
+   ALLOWED_ORIGINS=https://overtakehq-server.onrender.com
    ```
 
-4. Deploy → Note URL: `https://overtake-fastf1.onrender.com`
+4. Deploy → Note URL: `https://overtakehq-fastf1.onrender.com`
 
 5. **Go back to server** → Update `FASTF1_BASE_URL` → Redeploy
 
@@ -73,10 +73,10 @@
 
 3. **Environment Variables:**
    ```bash
-   VITE_API_URL=https://overtake-server.onrender.com/api
+   VITE_API_URL=https://overtakehq-server.onrender.com/api
    ```
 
-4. Deploy → Note URL: `https://overtake-xxx.vercel.app`
+4. Deploy → Note URL: `https://overtakehq-xxx.vercel.app`
 
 5. **Go back to Render server** → Update `CORS_ORIGIN` to Vercel URL → Redeploy
 
@@ -86,7 +86,7 @@
 
 ### 1. Create Admin Account
 
-1. Open `https://overtake-xxx.vercel.app`
+1. Open `https://overtakehq-xxx.vercel.app`
 2. Register your account (this will be the admin)
 3. Open browser DevTools → Console → Run:
    ```javascript
@@ -123,7 +123,7 @@ Redeploy
 
 Using your admin token:
 ```bash
-curl -X POST "https://overtake-server.onrender.com/api/races/admin/sync?year=2026" \\
+curl -X POST "https://overtakehq-server.onrender.com/api/races/admin/sync?year=2026" \\
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
@@ -138,7 +138,7 @@ Wait ~1-2 minutes for 2026 season data to load.
 Repo → Settings → Secrets and variables → Actions → New secret:
 
 ```bash
-SERVER_URL=https://overtake-server.onrender.com
+SERVER_URL=https://overtakehq-server.onrender.com
 BOT_REFRESH_TOKEN=<bot's refresh token from step 5.2>
 ```
 
@@ -185,7 +185,7 @@ You can trigger any workflow manually:
 
 1. [uptimerobot.com](https://uptimerobot.com) → Add Monitor
 2. Type: HTTP(s)
-3. URL: `https://overtake-server.onrender.com/api/health`
+3. URL: `https://overtakehq-server.onrender.com/api/health`
 4. Interval: 5 minutes
 
 ### Error Tracking (Optional)

@@ -392,7 +392,7 @@ app.get("/mock/dashboard", (_req, res) => {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mock F1 Control — Overtake</title>
+<title>Mock F1 Control — OvertakeHQ</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0a0a0a; color: #e5e5e5; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; min-height: 100vh; }

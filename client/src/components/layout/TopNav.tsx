@@ -24,7 +24,7 @@ export function TopNav() {
           <Link to="/dashboard" className="flex items-center gap-3">
             <Flag className="w-8 h-8 text-theme-primary" />
             <div>
-              <h1 className="text-xl tracking-tight leading-none">OVERTAKE</h1>
+              <h1 className="text-xl tracking-tight leading-none">OVERTAKEHQ</h1>
               <div className="text-xs text-muted-foreground telemetry-text">F1 PREDICTION PLATFORM</div>
             </div>
           </Link>

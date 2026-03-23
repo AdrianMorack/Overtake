@@ -1,4 +1,4 @@
-# 🏁 Overtake — F1 Prediction Game
+# 🏁 OvertakeHQ — F1 Prediction Game
 
 A full-stack Formula 1 prediction platform where players join **Grids**, predict race outcomes, and compete on leaderboards. Features live race streaming, qualifying scoring, real F1 standings, and fully automated result syncing via GitHub Actions.
 
@@ -452,7 +452,7 @@ curl -X POST "http://localhost:4000/api/races/admin/sync?year=$(date +%Y)" \
 ### Backend (`server/.env`)
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/overtake"
+DATABASE_URL="postgresql://user:password@localhost:5432/overtakehq"
 JWT_SECRET="<run: openssl rand -hex 64>"
 JWT_REFRESH_SECRET="<run: openssl rand -hex 64>"
 PORT=4000
@@ -472,7 +472,7 @@ VITE_API_URL=http://localhost:4000/api
 
 | Secret | Purpose |
 |--------|---------|
-| `SERVER_URL` | Live server base URL (e.g. `https://overtake-server.onrender.com`) |
+| `SERVER_URL` | Live server base URL (e.g. `https://overtakehq-server.onrender.com`) |
 | `BOT_REFRESH_TOKEN` | Long-lived refresh token for the admin bot account |
 
 ---

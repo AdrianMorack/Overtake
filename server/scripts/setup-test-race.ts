@@ -57,7 +57,7 @@ async function main() {
       season:          9999,
       round:           1,
       raceName:        "Test Race (Mock)",
-      circuitName:     "Overtake Test Circuit",
+      circuitName:     "OvertakeHQ Test Circuit",
       country:         "Testonia",
       raceDate:        now,
       qualifyingDate:  new Date(now.getTime() - 90 * 60 * 1000), // 90min ago

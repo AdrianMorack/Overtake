@@ -26,4 +26,5 @@ export const env = {
   fastF1ServiceUrl: process.env.FASTF1_SERVICE_URL || "http://localhost:8100",
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:3000",
   adminUserIds: process.env.ADMIN_USER_IDS ? process.env.ADMIN_USER_IDS.split(",").map(s => s.trim()) : [],
+  syncSecret: process.env.SYNC_SECRET || "",
 } as const;

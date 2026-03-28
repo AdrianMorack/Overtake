@@ -81,6 +81,7 @@ liveEmitter.setMaxListeners(500);
 // ─── In-memory state ─────────────────────────────────────────────────────────
 const snapshots = new Map<number, LiveRaceSnapshot>();
 const pollers = new Map<number, ReturnType<typeof setInterval>>();
+const sessionActiveState = new Map<number, boolean>(); // tracks active→inactive transitions
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -243,6 +244,13 @@ async function buildSnapshot(sessionKey: number): Promise<LiveRaceSnapshot> {
       (!sess.date_end || new Date(sess.date_end) >= new Date())
     : false;
 
+  // Emit sessionEnded when a session transitions from active → inactive
+  const wasActive = sessionActiveState.get(sessionKey);
+  sessionActiveState.set(sessionKey, isActive);
+  if (wasActive === true && !isActive) {
+    liveEmitter.emit("sessionEnded", sessionKey, sess?.session_name ?? "Unknown");
+  }
+
   return {
     sessionKey,
     sessionName: sess?.session_name ?? "Session",
@@ -293,6 +301,7 @@ export async function startPolling(sessionKey: number, intervalMs = 5_000) {
 export function stopPolling(sessionKey: number) {
   const t = pollers.get(sessionKey);
   if (t) { clearInterval(t); pollers.delete(sessionKey); }
+  sessionActiveState.delete(sessionKey);
   console.log(`[Live] Polling stopped for session ${sessionKey}`);
 }
 

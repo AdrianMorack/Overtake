@@ -3,7 +3,7 @@ import { RaceStatus } from "@prisma/client";
 import prisma from "../config/database";
 import * as FastF1 from "../services/fastF1Client";
 import { scoreRace } from "../services/scoringService";
-import { detectAndManageLiveSessions } from "../services/liveRaceService";
+import { detectAndManageLiveSessions, liveEmitter } from "../services/liveRaceService";
 
 /**
  * Sync race schedule, drivers, teams from FastF1 for a given season.
@@ -127,11 +127,15 @@ export async function syncQualiResults() {
 
   const pending = await prisma.raceWeekend.findMany({
     where: {
-      status: "UPCOMING",
+      status: { in: [RaceStatus.UPCOMING, RaceStatus.IN_PROGRESS] },
       qualifyingDate: { lt: new Date() },
       qualiSessionKey: { not: null },
     },
   });
+
+  if (pending.length === 0) {
+    console.log(`[Quali] No pending races with qualifying data to sync`);
+  }
 
   for (const race of pending) {
     if (!race.qualiSessionKey) continue;
@@ -139,7 +143,7 @@ export async function syncQualiResults() {
     try {
       const qualiPositions = await FastF1.getFinalPositions(race.qualiSessionKey);
       if (qualiPositions.length < 3) {
-        console.log(`[Quali] ${race.raceName}: insufficient qualifying data yet`);
+        console.log(`[Quali] ${race.raceName}: only ${qualiPositions.length} positions returned — data not ready yet (need ≥3)`);
         continue;
       }
 
@@ -292,10 +296,10 @@ export function startSyncJobs() {
   // Sync season data every day at 06:00 UTC
   new CronJob("0 6 * * *", () => syncSeasonData().catch(console.error), null, true, "UTC");
 
-  // Check for qualifying results every 5 minutes
+  // Check for qualifying results every 5 minutes (fallback)
   new CronJob("*/5 * * * *", () => syncQualiResults().catch(console.error), null, true, "UTC");
 
-  // Check for race results every 5 minutes
+  // Check for race results every 5 minutes (fallback)
   new CronJob("*/5 * * * *", () => syncRaceResults().catch(console.error), null, true, "UTC");
 
   // Detect live sessions and start/stop polling every minute
@@ -303,6 +307,20 @@ export function startSyncJobs() {
 
   // Keep Neon DB awake — ping every 4 minutes to stay under the 5-min idle threshold
   new CronJob("*/4 * * * *", () => keepAlive(), null, true, "UTC");
+
+  // Immediately sync results when the live poller detects a session just ended
+  // This fires within seconds of qualifying/race ending instead of waiting up to 5 min
+  liveEmitter.on("sessionEnded", (sessionKey: number, sessionName: string) => {
+    const isQuali = ["Qualifying", "Sprint Qualifying", "Sprint Shootout"].includes(sessionName);
+    const isRace  = ["Race", "Sprint"].includes(sessionName);
+    if (isQuali) {
+      console.log(`[Sync] Qualifying session ${sessionKey} ended — triggering immediate quali sync`);
+      syncQualiResults().catch(console.error);
+    } else if (isRace) {
+      console.log(`[Sync] Race session ${sessionKey} ended — triggering immediate race sync`);
+      syncRaceResults().catch(console.error);
+    }
+  });
 
   console.log("[Cron] Sync jobs started");
 }

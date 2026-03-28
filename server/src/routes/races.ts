@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authenticate, authorizeAdmin } from "../middleware/auth";
+import { env } from "../config/env";
 import * as raceService from "../services/raceService";
 import { syncSeasonData, syncRaceResults, syncQualiResults } from "../jobs/syncF1Data";
 
@@ -17,6 +18,25 @@ router.post("/admin/sync", authenticate, authorizeAdmin, async (req: Request, re
     await syncQualiResults();
     await syncRaceResults();
     res.json({ message: `Sync complete for ${year}` });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
+  }
+});
+
+// Secret-key force sync — no JWT required, just X-Sync-Secret header
+// Use this from cron-job.org, UptimeRobot, or any URL ping service
+router.post("/admin/force-sync", async (req: Request, res: Response) => {
+  const secret = req.headers["x-sync-secret"];
+  if (!env.syncSecret || secret !== env.syncSecret) {
+    res.status(401).json({ error: "Invalid or missing sync secret" });
+    return;
+  }
+  const year = new Date().getFullYear();
+  try {
+    await syncQualiResults();
+    await syncRaceResults();
+    res.json({ message: `Force sync complete for ${year}` });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(500).json({ error: msg });

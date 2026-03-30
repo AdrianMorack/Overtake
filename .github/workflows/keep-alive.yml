@@ -1,9 +1,9 @@
-name: Keep Server Awake
+name: Keep Services Awake
 
 on:
   schedule:
     # Ping every 10 minutes, every day
-    # Prevents Render free tier from sleeping
+    # Prevents Render free tier from sleeping (spins down after 15 min idle)
     - cron: '*/10 * * * *'
   workflow_dispatch:
 
@@ -11,7 +11,7 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping health endpoint
+      - name: Ping server health endpoint
         run: |
           echo "Pinging server health endpoint..."
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" "${{ secrets.SERVER_URL }}/api/health")
@@ -21,4 +21,16 @@ jobs:
             echo "✅ Server is awake"
           else
             echo "⚠️ Server returned $HTTP_CODE"
+          fi
+
+      - name: Ping FastF1 service health endpoint
+        run: |
+          echo "Pinging FastF1 service health endpoint..."
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" "${{ secrets.FASTF1_URL }}/health")
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          echo "Health check status: $HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ FastF1 service is awake"
+          else
+            echo "⚠️ FastF1 service returned $HTTP_CODE"
           fi

@@ -104,6 +104,12 @@ async function createTokens(userId: string, email: string) {
   const refreshTokenValue = generateRefreshToken();
   const tokenHash = hashToken(refreshTokenValue);
 
+  // Admin/bot accounts get a 1-year refresh token so GitHub Actions secrets don't expire
+  const isAdmin = env.adminUserIds.includes(userId);
+  const refreshExpiryMs = isAdmin
+    ? 365 * 24 * 60 * 60 * 1000  // 1 year for admins
+    : 7 * 24 * 60 * 60 * 1000;   // 7 days for regular users
+
   // Clean up expired tokens for this user
   await prisma.refreshToken.deleteMany({
     where: { userId, expiresAt: { lt: new Date() } },
@@ -113,7 +119,7 @@ async function createTokens(userId: string, email: string) {
     data: {
       token: tokenHash,
       userId,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + refreshExpiryMs),
     },
   });
 

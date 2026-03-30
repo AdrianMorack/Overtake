@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -39,7 +40,7 @@ app.add_middleware(
 
 # ─── In-memory session cache (30 s TTL) ──────────────────────────────────────
 _sess_cache: dict[tuple, tuple] = {}  # (year, rnd, id) -> (session, cached_at)
-SESSION_TTL = 30  # seconds
+SESSION_TTL = 300  # seconds (5 min — reduces upstream hits for repeated calls)
 
 
 def _load(year: int, rnd: int, identifier: str):
@@ -56,14 +57,24 @@ def _load(year: int, rnd: int, identifier: str):
         sess, cached_at = _sess_cache[key]
         if (now - cached_at).total_seconds() < SESSION_TTL:
             return sess
-    try:
-        sess = fastf1.get_session(year, rnd, identifier)
-        sess.load(laps=True, telemetry=False, weather=True, messages=True)
-        _sess_cache[key] = (sess, now)
-        return sess
-    except Exception as e:
-        logger.warning("Session %s R%s %s: %s", year, rnd, identifier, e)
-        raise HTTPException(status_code=404, detail="Session not found")
+    last_err: Exception | None = None
+    for attempt in range(3):
+        try:
+            sess = fastf1.get_session(year, rnd, identifier)
+            sess.load(laps=True, telemetry=False, weather=True, messages=True)
+            _sess_cache[key] = (sess, now)
+            return sess
+        except Exception as e:
+            last_err = e
+            msg = str(e).lower()
+            if "429" in msg or "too many requests" in msg or "rate" in msg:
+                wait = 10 * (attempt + 1)  # 10s, 20s, 30s
+                logger.warning("Session %s R%s %s: rate limited (attempt %d/3), retrying in %ds", year, rnd, identifier, attempt + 1, wait)
+                time.sleep(wait)
+            else:
+                break  # non-rate-limit error, don't retry
+    logger.warning("Session %s R%s %s: %s", year, rnd, identifier, last_err)
+    raise HTTPException(status_code=404, detail="Session not found")
 
 
 # ─── Key encoding helpers ─────────────────────────────────────────────────────

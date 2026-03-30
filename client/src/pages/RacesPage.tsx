@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { Flag, MapPin, Clock, CheckCircle } from "lucide-react";
@@ -88,6 +88,7 @@ export function RacesPage() {
   const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const upcomingRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.getRaceWeekends()
@@ -95,6 +96,12 @@ export function RacesPage() {
       .catch((e) => setError(e.message ?? "Failed to load"))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!loading && upcomingRef.current) {
+      upcomingRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [loading]);
 
   const upcoming = races.filter((r) => r.status === "UPCOMING" || r.status === "IN_PROGRESS");
   const completed = races.filter((r) => r.status === "COMPLETED");
@@ -119,14 +126,14 @@ export function RacesPage() {
 
         {!loading && !error && (
           <>
-            {upcoming.length > 0 && (
+            {completed.length > 0 && (
               <div className="mb-8">
                 <h2 className="mb-4 flex items-center gap-3">
-                  <div className="w-1 h-6 bg-theme-primary rounded-full" />
-                  Upcoming Races
+                  <div className="w-1 h-6 bg-green-600 rounded-full" />
+                  Completed Races
                 </h2>
                 <div className="space-y-4">
-                  {upcoming.map((race, i) => (
+                  {completed.map((race, i) => (
                     <motion.div
                       key={race.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -140,14 +147,14 @@ export function RacesPage() {
               </div>
             )}
 
-            {completed.length > 0 && (
-              <div>
+            {upcoming.length > 0 && (
+              <div ref={upcomingRef} className="mb-8">
                 <h2 className="mb-4 flex items-center gap-3">
-                  <div className="w-1 h-6 bg-green-600 rounded-full" />
-                  Completed Races
+                  <div className="w-1 h-6 bg-theme-primary rounded-full" />
+                  Upcoming Races
                 </h2>
                 <div className="space-y-4">
-                  {completed.map((race, i) => (
+                  {upcoming.map((race, i) => (
                     <motion.div
                       key={race.id}
                       initial={{ opacity: 0, y: 20 }}

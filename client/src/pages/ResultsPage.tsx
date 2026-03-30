@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Trophy, CheckCircle2, XCircle, Zap, ChevronDown, ChevronUp } from "lucide-react";
@@ -129,6 +129,137 @@ export function ResultsPage() {
                 <div className="text-4xl text-theme-primary telemetry-text">{total}</div>
                 <div className="text-sm text-muted-foreground">points earned</div>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* All Players Table */}
+        {predictions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="grid-panel rounded-lg overflow-hidden mb-6"
+          >
+            <div className="p-4 border-b border-border bg-muted/30">
+              <h2>All Predictions</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/20 border-b border-border">
+                  <tr>
+                    <th className="px-3 py-3 text-left text-xs telemetry-text text-muted-foreground">PLAYER</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q1</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q2</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q3</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P1</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P2</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P3</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
+                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
+                    <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {predictions
+                    .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
+                    .map((p) => {
+                    const isExpanded = expandedUser === p.id;
+                    const pBreakdown = (p.breakdown ?? {}) as Record<string, number>;
+                    const matchCell = (picked: string, official: string | null | undefined) => {
+                      if (!official) return "text-muted-foreground";
+                      return picked === official ? "text-green-500" : "text-red-400";
+                    };
+                    return (
+                      <Fragment key={p.id}>
+                        <tr
+                          key={p.id}
+                          onClick={() => setExpandedUser(isExpanded ? null : p.id)}
+                          className={`border-b border-border hover:bg-muted/30 transition-colors cursor-pointer ${
+                            p.userId === user?.id ? "bg-theme-primary/10" : ""
+                          }`}
+                        >
+                          <td className="px-3 py-3 font-medium">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              {p.user?.username ?? "—"}
+                            </div>
+                          </td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiFirst, results?.qualiFirst)}`}>{p.qualiFirst}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiSecond, results?.qualiSecond)}`}>{p.qualiSecond}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiThird, results?.qualiThird)}`}>{p.qualiThird}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceFirst, results?.raceFirst)}`}>{p.raceFirst}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceSecond, results?.raceSecond)}`}>{p.raceSecond}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceThird, results?.raceThird)}`}>{p.raceThird}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.fastestLap, results?.fastestLap)}`}>{p.fastestLap}</td>
+                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.topTeam, results?.topTeam)}`}>{p.topTeam}</td>
+                          <td className="px-3 py-3 text-right">
+                            <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints}</span>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${p.id}-detail`} className="bg-muted/20">
+                            <td colSpan={10} className="px-4 py-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                {[
+                                  { label: "Quali P1", picked: p.qualiFirst, official: results?.qualiFirst, key: "qualiFirst" },
+                                  { label: "Quali P2", picked: p.qualiSecond, official: results?.qualiSecond, key: "qualiSecond" },
+                                  { label: "Quali P3", picked: p.qualiThird, official: results?.qualiThird, key: "qualiThird" },
+                                  { label: "Race P1", picked: p.raceFirst, official: results?.raceFirst, key: "raceFirst" },
+                                  { label: "Race P2", picked: p.raceSecond, official: results?.raceSecond, key: "raceSecond" },
+                                  { label: "Race P3", picked: p.raceThird, official: results?.raceThird, key: "raceThird" },
+                                  { label: "Fastest Lap", picked: p.fastestLap, official: results?.fastestLap, key: "fastestLap" },
+                                ].map((item) => {
+                                  const hasOfficial = item.official != null && item.official !== "";
+                                  const correct = hasOfficial && item.picked === item.official;
+                                  const pts = pBreakdown[item.key] ?? 0;
+                                  return (
+                                    <div key={item.key} className="flex items-center justify-between p-2 rounded bg-muted/40">
+                                      <div>
+                                        <div className="text-[10px] text-muted-foreground telemetry-text">{item.label}</div>
+                                        <div className="telemetry-text">{item.picked}</div>
+                                        {hasOfficial && item.picked !== item.official && (
+                                          <div className="text-[10px] text-muted-foreground">Actual: {item.official}</div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {hasOfficial ? (
+                                          correct ? (
+                                            <><CheckCircle2 className="w-4 h-4 text-green-500" />{pts > 0 && <span className="text-green-500 telemetry-text text-xs">+{pts}</span>}</>
+                                          ) : (
+                                            <><XCircle className="w-4 h-4 text-red-500" />{pts > 0 && <span className="text-yellow-500 telemetry-text text-xs">+{pts}</span>}</>
+                                          )
+                                        ) : (
+                                          <span className="text-[10px] text-muted-foreground telemetry-text">PENDING</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {p.topTeam && (
+                                  <div className="flex items-center justify-between p-2 rounded bg-muted/40">
+                                    <div>
+                                      <div className="text-[10px] text-muted-foreground telemetry-text">Top Team</div>
+                                      <div className="telemetry-text">{p.topTeam}</div>
+                                    </div>
+                                    {pBreakdown["topTeam"] > 0 && (
+                                      <span className="text-green-500 telemetry-text text-xs">+{pBreakdown["topTeam"]}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-3 text-right">
+                                <span className="text-muted-foreground text-xs">Total: </span>
+                                <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints} pts</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </motion.div>
         )}
@@ -299,136 +430,7 @@ export function ResultsPage() {
           </div>
         )}
 
-        {/* All Players Table */}
-        {predictions.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="grid-panel rounded-lg overflow-hidden"
-          >
-            <div className="p-4 border-b border-border bg-muted/30">
-              <h2>All Predictions</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/20 border-b border-border">
-                  <tr>
-                    <th className="px-3 py-3 text-left text-xs telemetry-text text-muted-foreground">PLAYER</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q1</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q2</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">Q3</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P1</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P2</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">P3</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">FL</th>
-                    <th className="px-3 py-3 text-center text-xs telemetry-text text-muted-foreground">TT</th>
-                    <th className="px-3 py-3 text-right text-xs telemetry-text text-muted-foreground">PTS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {predictions
-                    .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
-                    .map((p) => {
-                    const isExpanded = expandedUser === p.id;
-                    const pBreakdown = (p.breakdown ?? {}) as Record<string, number>;
-                    const matchCell = (picked: string, official: string | null | undefined) => {
-                      if (!official) return "text-muted-foreground";
-                      return picked === official ? "text-green-500" : "text-red-400";
-                    };
-                    return (
-                      <>
-                        <tr
-                          key={p.id}
-                          onClick={() => setExpandedUser(isExpanded ? null : p.id)}
-                          className={`border-b border-border hover:bg-muted/30 transition-colors cursor-pointer ${
-                            p.userId === user?.id ? "bg-theme-primary/10" : ""
-                          }`}
-                        >
-                          <td className="px-3 py-3 font-medium">
-                            <div className="flex items-center gap-2">
-                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                              {p.user?.username ?? "—"}
-                            </div>
-                          </td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiFirst, results?.qualiFirst)}`}>{p.qualiFirst}</td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiSecond, results?.qualiSecond)}`}>{p.qualiSecond}</td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.qualiThird, results?.qualiThird)}`}>{p.qualiThird}</td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceFirst, results?.raceFirst)}`}>{p.raceFirst}</td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceSecond, results?.raceSecond)}`}>{p.raceSecond}</td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.raceThird, results?.raceThird)}`}>{p.raceThird}</td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.fastestLap, results?.fastestLap)}`}>{p.fastestLap}</td>
-                          <td className={`px-3 py-3 text-center telemetry-text text-xs ${matchCell(p.topTeam, results?.topTeam)}`}>{p.topTeam}</td>
-                          <td className="px-3 py-3 text-right">
-                            <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints}</span>
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr key={`${p.id}-detail`} className="bg-muted/20">
-                            <td colSpan={10} className="px-4 py-4">
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                                {[
-                                  { label: "Quali P1", picked: p.qualiFirst, official: results?.qualiFirst, key: "qualiFirst" },
-                                  { label: "Quali P2", picked: p.qualiSecond, official: results?.qualiSecond, key: "qualiSecond" },
-                                  { label: "Quali P3", picked: p.qualiThird, official: results?.qualiThird, key: "qualiThird" },
-                                  { label: "Race P1", picked: p.raceFirst, official: results?.raceFirst, key: "raceFirst" },
-                                  { label: "Race P2", picked: p.raceSecond, official: results?.raceSecond, key: "raceSecond" },
-                                  { label: "Race P3", picked: p.raceThird, official: results?.raceThird, key: "raceThird" },
-                                  { label: "Fastest Lap", picked: p.fastestLap, official: results?.fastestLap, key: "fastestLap" },
-                                ].map((item) => {
-                                  const hasOfficial = item.official != null && item.official !== "";
-                                  const correct = hasOfficial && item.picked === item.official;
-                                  const pts = pBreakdown[item.key] ?? 0;
-                                  return (
-                                    <div key={item.key} className="flex items-center justify-between p-2 rounded bg-muted/40">
-                                      <div>
-                                        <div className="text-[10px] text-muted-foreground telemetry-text">{item.label}</div>
-                                        <div className="telemetry-text">{item.picked}</div>
-                                        {hasOfficial && item.picked !== item.official && (
-                                          <div className="text-[10px] text-muted-foreground">Actual: {item.official}</div>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        {hasOfficial ? (
-                                          correct ? (
-                                            <><CheckCircle2 className="w-4 h-4 text-green-500" />{pts > 0 && <span className="text-green-500 telemetry-text text-xs">+{pts}</span>}</>
-                                          ) : (
-                                            <><XCircle className="w-4 h-4 text-red-500" />{pts > 0 && <span className="text-yellow-500 telemetry-text text-xs">+{pts}</span>}</>
-                                          )
-                                        ) : (
-                                          <span className="text-[10px] text-muted-foreground telemetry-text">PENDING</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                                {p.topTeam && (
-                                  <div className="flex items-center justify-between p-2 rounded bg-muted/40">
-                                    <div>
-                                      <div className="text-[10px] text-muted-foreground telemetry-text">Top Team</div>
-                                      <div className="telemetry-text">{p.topTeam}</div>
-                                    </div>
-                                    {pBreakdown["topTeam"] > 0 && (
-                                      <span className="text-green-500 telemetry-text text-xs">+{pBreakdown["topTeam"]}</span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="mt-3 text-right">
-                                <span className="text-muted-foreground text-xs">Total: </span>
-                                <span className="text-theme-primary telemetry-text font-bold">{p.totalPoints} pts</span>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-        )}
+        
       </motion.div>
     </div>
   );

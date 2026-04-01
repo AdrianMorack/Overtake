@@ -32,7 +32,7 @@ export function MyGridsPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-4 py-2 border border-theme-primary text-theme-primary hover:bg-theme-primary/10 rounded-lg transition-colors text-sm telemetry-text"
+                className="flex items-center gap-2 px-4 py-2 bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg transition-colors text-sm telemetry-text"
               >
                 <Users className="w-4 h-4" />
                 JOIN
@@ -65,7 +65,7 @@ export function MyGridsPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <Link to="/grids/join">
-                <button className="px-4 py-2 border border-theme-primary text-theme-primary hover:bg-theme-primary/10 rounded-lg text-sm telemetry-text transition-colors">
+                <button className="px-4 py-2 bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg text-sm telemetry-text transition-colors">
                   JOIN GRID
                 </button>
               </Link>

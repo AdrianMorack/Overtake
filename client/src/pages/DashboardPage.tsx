@@ -139,7 +139,7 @@ export function DashboardPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-4 py-2 border border-theme-primary text-theme-primary hover:bg-theme-primary/10 rounded-lg telemetry-text text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-theme-secondary hover:bg-theme-secondary/80 text-theme-secondary-fg rounded-lg telemetry-text text-sm transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 JOIN
